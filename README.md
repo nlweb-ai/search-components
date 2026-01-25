@@ -1,13 +1,14 @@
 # @nlweb-ai/search-components
 
-A React component library for building search interfaces with TypeScript and Tailwind CSS.
+A React component library for integrating nlweb search capabilities into your applications. Built with TypeScript and Tailwind CSS.
 
 ## Features
 
+- 🔍 **nlweb Integration** - Connect directly to nlweb search API
+- 💬 **Chat Interface** - Conversational search experience
 - 🎨 **Styled with Tailwind CSS** - Beautiful, customizable components
 - 📦 **TypeScript Support** - Full type definitions included
 - ⚡ **Tree-shakeable** - Optimized bundle size
-- 🔧 **Flexible** - Highly customizable components
 - 📱 **Responsive** - Mobile-friendly designs
 
 ## Installation
@@ -48,98 +49,40 @@ Or using yarn:
 yarn add @nlweb-ai/search-components
 ```
 
-## Usage
+## Components
 
-Import the components you need:
+### ChatSearch
+
+The main component for integrating nlweb's conversational search interface into your application. It provides a complete chat-based search experience with message history, streaming responses, and rich search results.
 
 ```tsx
-import { SearchBar, SearchInput, SearchResults } from '@nlweb-ai/search-components';
+import { ChatSearch } from '@nlweb-ai/search-components';
+
+function App() {
+  return (
+    <ChatSearch
+      apiKey="your-nlweb-api-key"
+      placeholder="Ask me anything..."
+    />
+  );
+}
 ```
 
 > **Note**: Styles are automatically injected when you import the components. No need to import CSS separately.
 
-### SearchInput
+## Examples
 
-A basic search input field component.
+To see live examples and interact with the components, start the Storybook development environment:
 
-```tsx
-import { useState } from 'react';
-import { SearchInput } from '@nlweb-ai/search-components';
-
-function App() {
-  const [query, setQuery] = useState('');
-
-  return (
-    <SearchInput
-      value={query}
-      onChange={setQuery}
-      placeholder="Search for anything..."
-    />
-  );
-}
+```bash
+pnpm storybook
 ```
 
-### SearchBar
-
-A complete search bar with optional search button.
-
-```tsx
-import { useState } from 'react';
-import { SearchBar } from '@nlweb-ai/search-components';
-
-function App() {
-  const [query, setQuery] = useState('');
-
-  const handleSearch = (value: string) => {
-    console.log('Searching for:', value);
-    // Perform search logic here
-  };
-
-  return (
-    <SearchBar
-      value={query}
-      onChange={setQuery}
-      onSearch={handleSearch}
-      placeholder="Search..."
-      showButton={true}
-      buttonText="Search"
-    />
-  );
-}
-```
-
-### SearchResults
-
-Display search results in a clean, organized list.
-
-```tsx
-import { SearchResults } from '@nlweb-ai/search-components';
-
-const results = [
-  {
-    id: '1',
-    title: 'Result Title',
-    description: 'A brief description of the result',
-    url: 'https://example.com',
-  },
-  // ... more results
-];
-
-function App() {
-  const handleResultClick = (result) => {
-    console.log('Clicked:', result);
-  };
-
-  return (
-    <SearchResults
-      results={results}
-      onResultClick={handleResultClick}
-      loading={false}
-      emptyMessage="No results found"
-    />
-  );
-}
-```
+This will launch an interactive playground where you can:
+- See the ChatSearch component in action
+- Experiment with different configurations
+- Test the component with your own API key
+- Explore the component's features and capabilities
 
 ## Development
 
@@ -177,37 +120,16 @@ pnpm publish
 
 ## Component Props
 
-### SearchInput
+### ChatSearch
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `value` | `string` | - | Current input value |
-| `onChange` | `(value: string) => void` | - | Callback when value changes |
-| `placeholder` | `string` | `'Search...'` | Placeholder text |
-| `className` | `string` | `''` | Additional CSS classes |
-| `disabled` | `boolean` | `false` | Whether input is disabled |
+| `apiKey` | `string` | - | Your nlweb API key (required) |
+| `placeholder` | `string` | `'Ask me anything...'` | Placeholder text for the input |
+| `className` | `string` | `''` | Additional CSS classes for the container |
+| `onError` | `(error: Error) => void` | - | Callback when an error occurs |
 
-### SearchBar
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `value` | `string` | - | Current input value |
-| `onChange` | `(value: string) => void` | - | Callback when value changes |
-| `onSearch` | `(value: string) => void` | - | Callback when search is triggered |
-| `placeholder` | `string` | `'Search...'` | Placeholder text |
-| `className` | `string` | `''` | Additional CSS classes |
-| `showButton` | `boolean` | `true` | Whether to show search button |
-| `buttonText` | `string` | `'Search'` | Text for search button |
-
-### SearchResults
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `results` | `SearchResult[]` | - | Array of search results |
-| `onResultClick` | `(result: SearchResult) => void` | - | Callback when result is clicked |
-| `className` | `string` | `''` | Additional CSS classes |
-| `loading` | `boolean` | `false` | Whether results are loading |
-| `emptyMessage` | `string` | `'No results found'` | Message when no results |
+For more detailed usage examples and advanced configurations, please refer to the Storybook documentation (run `pnpm storybook`).
 
 ## License
 

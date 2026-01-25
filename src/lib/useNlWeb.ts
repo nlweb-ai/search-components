@@ -111,6 +111,7 @@ export function useNlWeb(config: UseNlWebConfig) {
                     try {
                         const dataStr = line.slice(6); // Remove 'data: ' prefix
                         const data = JSON.parse(dataStr);
+                        console.log(data);
                         // Check metadata, if present
                         if (data._meta) {
                              // Check for failure response
