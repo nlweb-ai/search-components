@@ -3,9 +3,9 @@ import { SearchResponse, useNlWeb} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { MagnifyingGlassIcon, ArrowRightIcon,XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
-import {getThumbnailUrl} from '../lib/parseSchema';
+import {getThumbnailUrl, NlwebResult} from '../lib/parseSchema';
 
-function SearchQuery({initQuery, className, loading, handleSearch, placeholder="Search..."} : {initQuery?: string; className?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
+function SearchQuery({initQuery, className, loading, handleSearch, placeholder="Search..."} : {initQuery?: string | null; className?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
   const [query, setQuery] = useState(initQuery || '');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,7 +97,7 @@ function ResultCard({result} : {result: NlwebResult}) {
 
   return (
     <a
-      href={result.url || result.grounding || '#'}
+      href={(result.url || result.grounding || '#') as string}
       target="_blank"
       rel="noopener noreferrer"
       className="block no-underline! transition-all duration-200 overflow-hidden"
@@ -107,7 +107,7 @@ function ResultCard({result} : {result: NlwebResult}) {
           {imageUrl ?
             <img
               src={imageUrl}
-              alt={result.name || result.title || 'Result image'}
+              alt={(result.name || result.title || 'Result image') as string}
               className={clsx("w-full h-full object-cover rounded", error ? 'invisible' : '')}
               onError={handleError}
             /> : null
@@ -116,7 +116,7 @@ function ResultCard({result} : {result: NlwebResult}) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
-            {result.name || result.title || 'Untitled'}
+            {(result.name || result.title || 'Untitled') as string}
           </h3>
           {result.description && (
             <p className="text-xs text-gray-600 line-clamp-3 mb-2">
@@ -137,7 +137,7 @@ function ResultCard({result} : {result: NlwebResult}) {
   )
 }
 
-function SummaryCard({summary} : {summary? : string}) {
+function SummaryCard({summary} : {summary? : string | null}) {
   if (summary) {
     return (
       <div className="text-lg text-gray-800 leading-relaxed">
@@ -164,7 +164,7 @@ function SimpleSkeleton() {
   )
 }
 
-function SearchingFor({query, streaming} : {query?: string; streaming?: boolean}) {
+function SearchingFor({query, streaming} : {query?: string | null; streaming?: boolean}) {
   return (
     <div className='text-gray-500 gap-1 flex items-center text-sm pb-2 px-2'>
       {streaming ? "Searching:" : "Searched:"} {query ? <span className='text-gray-800 overflow-ellipse'>{query}</span> : <SimpleSkeleton/>}
@@ -172,7 +172,7 @@ function SearchingFor({query, streaming} : {query?: string; streaming?: boolean}
   )
 }
 
-function AssistantMessage({summary, results} : {summary?: string | null; results: NLWebResult[]}) {
+function AssistantMessage({summary, results} : {summary?: string | null; results: NlwebResult[]}) {
   return (
     <div className="flex justify-start mb-6">
       <div className='bg-gray-50 p-6 rounded-lg'>
@@ -181,7 +181,7 @@ function AssistantMessage({summary, results} : {summary?: string | null; results
             <SummaryCard summary={summary}/>
             <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
               {results.map((r, idx) =>
-                <ResultCard result={r} key={r.url || r.name || idx}/>
+                <ResultCard result={r} key={(r.url || r.name || idx) as string}/>
               )}
             </div>
           </div>
@@ -203,7 +203,7 @@ function QueryMessage({query} : {query: string}) {
   )
 }
 
-function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, streamingResults, results} : {loadingQuery: string | null; streamingModifiedQuery: string | null; streamingSummary?: string | null; streamingResults: NLWebResult[]; results: QueryResultSet[]}) {
+function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, streamingResults, results} : {loadingQuery: string | null; streamingModifiedQuery: string | null; streamingSummary?: string | null; streamingResults: NlwebResult[]; results: QueryResultSet[]}) {
   return (
     <div className="space-y-4 py-6">
       {results.map((r, idx) =>
@@ -226,7 +226,6 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
           {results.length > 0 ? <QueryMessage query={loadingQuery}/> : null}
           {results.length > 0 ? <SearchingFor streaming={true} query={streamingModifiedQuery}/> : null}
           <AssistantMessage 
-            modifiedQuery={streamingModifiedQuery} 
             summary={streamingSummary} 
             results={streamingResults}
           />

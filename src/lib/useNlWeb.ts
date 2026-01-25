@@ -73,7 +73,7 @@ export function useNlWeb(config: UseNlWebConfig) {
     /**
      * Sort results by score in descending order
      */
-    const sortResultsByScore = useCallback((results: NLWebResult[]): NLWebResult[] => {
+    const sortResultsByScore = useCallback((results: NlwebResult[]): NlwebResult[] => {
         return [...results].sort((a, b) => {
             const scoreA = a.score || 0;
             const scoreB = b.score || 0;
@@ -95,8 +95,8 @@ export function useNlWeb(config: UseNlWebConfig) {
         const decoder = new TextDecoder();
         let buffer = '';
         const accumulatedResults: NlwebResult[] = [];
-        let summary = null;
-        let decontextualizedQuery = null;
+        let summary:string = '';
+        let decontextualizedQuery:string = '';
         try {
             while (true) {
                 const { value, done } = await reader.read();
@@ -140,7 +140,7 @@ export function useNlWeb(config: UseNlWebConfig) {
                                         );
 
                                         if (!exists) {
-                                            accumulatedResults.push(result);
+                                            accumulatedResults.push(parsed);
                                         }
                                     }
                                 }
@@ -157,7 +157,7 @@ export function useNlWeb(config: UseNlWebConfig) {
 
                         // Handle v0.54 structuredData array (chatgpt_app format)
                         if (data.structuredData && Array.isArray(data.structuredData)) {
-                            data.structuredData.forEach((result: NLWebResult) => {
+                            data.structuredData.forEach((result: NlwebResult) => {
                                 // Check if result already exists (by URL or name)
                                 const exists = accumulatedResults.some(item =>
                                     (item.url && item.url === result.url) ||
@@ -293,7 +293,9 @@ export function useNlWeb(config: UseNlWebConfig) {
             }
 
             // Return empty results if aborted
-            return [];
+            return {
+              results: []
+            };
         }
     }, [endpoint, site, maxResults, handleStreamingResponse]);
 

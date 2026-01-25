@@ -1,4 +1,4 @@
-import {Thing, Recipe, Article} from 'schema-dts';
+import {Thing} from 'schema-dts';
 import {z} from 'zod';
 
 export interface Summary {
@@ -24,7 +24,7 @@ const ImageSchema = z.union([
 export type ImageType = z.infer<typeof ImageSchema>;
 
 
-function resultTypeIs<T>(result: NlwebResult, type: string) {
+function resultTypeIs(result: NlwebResult, type: string) {
   if (Array.isArray(result["@type"])) {
     console.log(result["@type"], type);
     return result["@type"].includes(type);
