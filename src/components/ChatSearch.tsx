@@ -242,10 +242,9 @@ interface QueryResultSet {
 }
 
 const NEW_ENDPOINT_WITH_60_SITES = "https://fwbrdyftb6bvdvgs.fz47.alb.azure.com/ask"
-const OLD_ENDPOINT = "https://fmfpc5c0aydvf2ft.fz93.alb.azure.com/ask"
 
 export function ChatSearch({
-  endpoint=OLD_ENDPOINT, site="yoast-site-recipes.azurewebsites.net"
+  endpoint=NEW_ENDPOINT_WITH_60_SITES, site="yoast-site-recipes.azurewebsites.net"
 } : {endpoint: string; site: string}) {
   const nlweb = useNlWeb({
     endpoint: endpoint,
