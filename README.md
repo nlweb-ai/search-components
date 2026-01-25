@@ -1,6 +1,7 @@
 # @nlweb-ai/search-components
 
 A React component library for integrating nlweb search capabilities into your applications. Built with TypeScript and Tailwind CSS.
+View the [Documentation and Playground](https://animated-disco-kznp35n.pages.github.io/)
 
 ## Features
 
@@ -10,6 +11,7 @@ A React component library for integrating nlweb search capabilities into your ap
 - 📦 **TypeScript Support** - Full type definitions included
 - ⚡ **Tree-shakeable** - Optimized bundle size
 - 📱 **Responsive** - Mobile-friendly designs
+
 
 ## Installation
 
