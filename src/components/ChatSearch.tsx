@@ -1,0 +1,324 @@
+import { useState, useRef } from 'react';
+import { SearchResponse, useNlWeb} from '../lib/useNlWeb';
+import { Dialog, DialogPanel, Button } from '@headlessui/react'
+import { MagnifyingGlassIcon, ArrowRightIcon,XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
+import { clsx } from 'clsx';
+import {getThumbnailUrl} from '../lib/parseSchema';
+
+function SearchQuery({initQuery, className, loading, handleSearch, placeholder="Search..."} : {initQuery?: string; className?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
+  const [query, setQuery] = useState(initQuery || '');
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (query.trim()) {
+      await handleSearch(query);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div
+        className={clsx(`flex relative items-center gap-3 rounded-lg border transition-all duration-200`,
+          isFocused
+            ? 'border-gray-400 shadow-md ring-2 ring-gray-100'
+            : 'border-gray-200 hover:border-gray-300',
+          className || 'bg-white'
+        )}
+      >
+        <div className='absolute left-3'>
+          <MagnifyingGlassIcon className='size-4 text-gray-400'/>
+        </div>
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onKeyPress={handleKeyPress}
+          placeholder={placeholder}
+          disabled={loading}
+          className="flex-1 rounded-md text-base px-4 pl-10 py-3 text-gray-900 placeholder-gray-400 outline-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+        <Button
+          type="submit"
+          disabled={!query.trim() || loading}
+          className={`p-2 absolute right-2 rounded-md transition-all duration-200 ${
+            query.trim() && !loading
+              ? 'bg-black text-white hover:bg-gray-800 active:scale-95'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+          aria-label="Submit search"
+        >
+          {loading ? (
+            <svg
+              className="w-4 h-4 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          ) : (
+            <ArrowRightIcon className='size-4'/>
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function ResultCard({result} : {result: NlwebResult}) {
+  const imageUrl = getThumbnailUrl(result)
+  const [error, setError] = useState(false);
+
+  const handleError = () => {
+    setError(true);
+  };
+
+  return (
+    <a
+      href={result.url || result.grounding || '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block no-underline! transition-all duration-200 overflow-hidden"
+    >
+      <div className="flex flex-col gap-3">
+        <div className={clsx("text-xs flex-shrink-0 h-36 rounded", error || !imageUrl ? 'bg-gray-100 flex items-center justify-center' : '')}>
+          {imageUrl ?
+            <img
+              src={imageUrl}
+              alt={result.name || result.title || 'Result image'}
+              className={clsx("w-full h-full object-cover rounded", error ? 'invisible' : '')}
+              onError={handleError}
+            /> : null
+          }
+          {!imageUrl || error ? <NewspaperIcon className='absolute size-5 text-gray-400'/> : null}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
+            {result.name || result.title || 'Untitled'}
+          </h3>
+          {result.description && (
+            <p className="text-xs text-gray-600 line-clamp-3 mb-2">
+              {typeof result.description == "string" ? result.description : ""}
+            </p>
+          )}
+          {result.site && (
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+              <span>{result.site}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </a>
+  )
+}
+
+function SummaryCard({summary} : {summary? : string}) {
+  if (summary) {
+    return (
+      <div className="text-lg text-gray-800 leading-relaxed">
+        {summary}
+      </div>
+    )
+  }
+
+  // Skeleton loader with pulsing animation
+  return (
+    <div className="space-y-3 w-full min-w-md animate-pulse">
+      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
+      <div className="h-4 bg-gray-200 rounded-md w-11/12"></div>
+      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
+      <div className="h-4 bg-gray-200 rounded-md w-10/12"></div>
+      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
+      <div className="h-4 bg-gray-200 rounded-md w-9/12"></div>
+    </div>
+  )
+}
+function SimpleSkeleton() {
+  return (
+    <div className="h-2 bg-gray-100 w-full animate-pulse rounded-md max-w-48"></div>
+  )
+}
+
+function SearchingFor({query, streaming} : {query?: string; streaming?: boolean}) {
+  return (
+    <div className='text-gray-500 gap-1 flex items-center text-sm pb-2 px-2'>
+      {streaming ? "Searching:" : "Searched:"} {query ? <span className='text-gray-800 overflow-ellipse'>{query}</span> : <SimpleSkeleton/>}
+    </div>
+  )
+}
+
+function AssistantMessage({summary, results} : {summary?: string | null; results: NLWebResult[]}) {
+  return (
+    <div className="flex justify-start mb-6">
+      <div className='bg-gray-50 p-6 rounded-lg'>
+        <div className="max-w-3xl">
+          <div className="space-y-4">
+            <SummaryCard summary={summary}/>
+            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
+              {results.map((r, idx) =>
+                <ResultCard result={r} key={r.url || r.name || idx}/>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function QueryMessage({query} : {query: string}) {
+  return (
+    <div className="flex justify-end mb-6">
+      <div className="max-w-2xl">
+        <div className="bg-gray-900 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
+          <p className="text-sm leading-relaxed">{query}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, streamingResults, results} : {loadingQuery: string | null; streamingModifiedQuery: string | null; streamingSummary?: string | null; streamingResults: NLWebResult[]; results: QueryResultSet[]}) {
+  return (
+    <div className="space-y-4 py-6">
+      {results.map((r, idx) =>
+        <div key={`${r.query}-${idx}`}>
+          {idx > 0 ? <QueryMessage query={r.query}/> : null}
+          {idx > 0 ? <SearchingFor query={r.response.decontextualizedQuery}/> : null}
+          {r.response.results.length > 0 ?
+            <AssistantMessage 
+              summary={r.response.summary} 
+              results={r.response.results}
+            /> : 
+            <div className='flex max-w-2xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
+              No results found
+            </div>
+          }
+        </div>
+      )}
+      {loadingQuery && (
+        <div>
+          {results.length > 0 ? <QueryMessage query={loadingQuery}/> : null}
+          {results.length > 0 ? <SearchingFor streaming={true} query={streamingModifiedQuery}/> : null}
+          <AssistantMessage 
+            modifiedQuery={streamingModifiedQuery} 
+            summary={streamingSummary} 
+            results={streamingResults}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface QueryResultSet {
+  query: string;
+  response: SearchResponse;
+}
+
+const NEW_ENDPOINT_WITH_60_SITES = "https://fwbrdyftb6bvdvgs.fz47.alb.azure.com/ask"
+const OLD_ENDPOINT = "https://fmfpc5c0aydvf2ft.fz93.alb.azure.com/ask"
+
+export function ChatSearch({
+  endpoint=OLD_ENDPOINT, site="yoast-site-recipes.azurewebsites.net"
+} : {endpoint: string; site: string}) {
+  const nlweb = useNlWeb({
+    endpoint: endpoint,
+    site: site
+  });
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [loadingQuery, setLoadingQuery] = useState<string | null>(null);
+  const [results, setResults] = useState<QueryResultSet[]>([]);
+  async function handleSearch(query: string, isRoot: boolean) {
+    setSearchOpen(true);
+    setLoadingQuery(query);
+    let response: SearchResponse;
+    if (isRoot) {
+      setResults([]);
+      response = await nlweb.search({
+        query: query
+      })
+    } else {
+      response = await nlweb.search({
+        query: query,
+        conversationHistory: results.map(r => r.query)
+      })
+    }
+    setLoadingQuery(null);
+    nlweb.clearResults();
+    setResults(curr => [...curr, {query: query, response: response}])
+  }
+  const rootQuery = results.length > 0 ? results[0].query : loadingQuery;
+  return (
+    <div>
+      <div className="mb-6">
+        <SearchQuery loading={nlweb.isLoading} handleSearch={(q) => handleSearch(q, true)}/>
+      </div>
+      <Dialog className={'relative z-50'} open={searchOpen} onClose={() => setSearchOpen(false)}>
+        <div className="fixed bg-white inset-0 w-screen h-screen overflow-y-auto p-4">
+          <Button onClick={() => setSearchOpen(false)} className='absolute right-4 top-14'>
+            <XMarkIcon className='size-5'/>
+          </Button>
+          <DialogPanel className={'w-full pt-24'}>
+            <div className='mx-auto pb-24 max-w-7xl'>
+              <div className="mb-6 max-w-xl mx-auto">
+                <SearchQuery 
+                  key={rootQuery || 'empty-search'}
+                  className='bg-gray-50' 
+                  loading={nlweb.isLoading} 
+                  handleSearch={(q) => handleSearch(q, true)}
+                  initQuery={rootQuery}
+                />
+              </div>
+
+              <ChatResults
+                loadingQuery={loadingQuery}
+                streamingResults={nlweb.results}
+                streamingSummary={nlweb.summary || null}
+                streamingModifiedQuery={nlweb.decontextualizedQuery || null}
+                results={results}
+              />
+              <div className='fixed pointer-events-none bottom-0 top-[calc(100%_-_100px)] bg-gradient-to-b from-transparent to-white left-0 right-0'/>
+              <div className="fixed bottom-8 left-0 right-0">
+                <div className='max-w-xl mx-auto'>
+                  <SearchQuery 
+                    key={loadingQuery}
+                    loading={nlweb.isLoading} 
+                    handleSearch={(q) => handleSearch(q, false)}
+                    className='shadow-xl bg-white'
+                    placeholder="Enter a follow up query"
+                  />
+                </div>
+              </div> 
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+    </div>
+  );
+}
