@@ -72,6 +72,8 @@ function App() {
 
 > **Note**: Styles are automatically injected when you import the components. No need to import CSS separately.
 
+## Hooks
+
 ### useNlWeb Hook
 
 A custom React hook for direct integration with the nlweb search API. Use this hook when you need more control over the search experience or want to build your own custom UI.
