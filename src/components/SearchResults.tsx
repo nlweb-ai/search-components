@@ -59,9 +59,15 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
             <p className="mt-1 text-sm text-gray-600">{result.description}</p>
           )}
           {result.url && (
-            <p className="mt-1 text-xs text-blue-500 hover:underline">
+            <a
+              href={result.url}
+              className="mt-1 text-xs text-blue-500 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
               {result.url}
-            </p>
+            </a>
           )}
         </div>
       ))}

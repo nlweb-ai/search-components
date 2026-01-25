@@ -18,6 +18,18 @@ This package is published to GitHub Packages. First, configure your `.npmrc`:
 @nlweb-ai:registry=https://npm.pkg.github.com
 ```
 
+**Authentication Required**: To install packages from GitHub Packages, you need to authenticate with a GitHub Personal Access Token (PAT) with `read:packages` scope. Add the following line to your `.npmrc`:
+
+```bash
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
+```
+
+Or set the token as an environment variable:
+
+```bash
+export GITHUB_TOKEN=your_token_here
+```
+
 Then install the package using pnpm:
 
 ```bash
@@ -42,8 +54,9 @@ Import the components you need:
 
 ```tsx
 import { SearchBar, SearchInput, SearchResults } from '@nlweb-ai/search-components';
-import '@nlweb-ai/search-components/styles.css';
 ```
+
+> **Note**: Styles are automatically injected when you import the components. No need to import CSS separately.
 
 ### SearchInput
 

@@ -20,7 +20,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   showButton = true,
   buttonText = 'Search',
 }) => {
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && onSearch) {
       onSearch(value);
     }
@@ -34,7 +34,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   return (
     <div className={`flex gap-2 ${className}`}>
-      <div className="flex-1" onKeyPress={handleKeyPress}>
+      <div className="flex-1" onKeyDown={handleKeyDown}>
         <SearchInput
           value={value}
           onChange={onChange}
