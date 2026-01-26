@@ -15,7 +15,7 @@ A React component library for integrating nlweb search capabilities into your ap
 
 ## Installation
 
-This package is published to GitHub Packages. First, configure your `.npmrc`:
+This package is published to GitHub Packages. First, configure your `~/.npmrc`:
 
 ```bash
 @nlweb-ai:registry=https://npm.pkg.github.com
