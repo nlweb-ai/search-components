@@ -5,6 +5,18 @@ import { MagnifyingGlassIcon, ArrowRightIcon,XMarkIcon, NewspaperIcon } from '@h
 import { clsx } from 'clsx';
 import {getThumbnailUrl, NlwebResult} from '../lib/parseSchema';
 
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+}
+
 function SearchQuery({initQuery, className, loading, handleSearch, placeholder="Search..."} : {initQuery?: string | null; className?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
   const [query, setQuery] = useState(initQuery || '');
   const [isFocused, setIsFocused] = useState(false);
@@ -87,6 +99,23 @@ function SearchQuery({initQuery, className, loading, handleSearch, placeholder="
   );
 }
 
+function ResultCardSkeleton() {
+  return (
+    <div className="block w-full transition-all duration-200 overflow-hidden animate-pulse">
+      <div className="flex flex-col gap-3">
+        <div className="h-36 w-full bg-gray-200 rounded"></div>
+        <div className="flex-1 min-w-0">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+          <div className="space-y-1">
+            <div className="h-3 bg-gray-200 rounded w-full"></div>
+            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ResultCard({result} : {result: NlwebResult}) {
   const imageUrl = getThumbnailUrl(result)
   const [error, setError] = useState(false);
@@ -107,7 +136,7 @@ function ResultCard({result} : {result: NlwebResult}) {
           {imageUrl ?
             <img
               src={imageUrl}
-              alt={(result.name || result.title || 'Result image') as string}
+              alt={decodeHtmlEntities((result.name || result.title || 'Result image') as string)}
               className={clsx("w-full h-full object-cover rounded", error ? 'invisible' : '')}
               onError={handleError}
             /> : null
@@ -116,11 +145,11 @@ function ResultCard({result} : {result: NlwebResult}) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
-            {(result.name || result.title || 'Untitled') as string}
+            {decodeHtmlEntities((result.name || result.title || 'Untitled') as string)}
           </h3>
           {result.description && (
             <p className="text-xs text-gray-600 line-clamp-3 mb-2">
-              {typeof result.description == "string" ? result.description : ""}
+              {typeof result.description == "string" ? decodeHtmlEntities(result.description) : ""}
             </p>
           )}
           {result.site && (
@@ -172,16 +201,21 @@ function SearchingFor({query, streaming} : {query?: string | null; streaming?: b
   )
 }
 
-function AssistantMessage({summary, results} : {summary?: string | null; results: NlwebResult[]}) {
+function AssistantMessage({summary, results, loading} : {summary?: string | null; results: NlwebResult[]; loading?: boolean}) {
+  const skeletonCount = Math.max(0, 6 - results.length);
+
   return (
     <div className="flex justify-start mb-6">
-      <div className='bg-gray-50 p-6 rounded-lg'>
-        <div className="max-w-3xl">
+      <div className='bg-gray-50 p-6 rounded-lg w-full'>
+        <div className="max-w-3xl w-full">
           <div className="space-y-4">
             <SummaryCard summary={summary}/>
             <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
               {results.map((r, idx) =>
                 <ResultCard result={r} key={(r.url || r.name || idx) as string}/>
+              )}
+              {loading && Array.from({ length: skeletonCount }).map((_, idx) =>
+                 <ResultCardSkeleton key={`skeleton-${idx}`}/>
               )}
             </div>
           </div>
@@ -225,9 +259,10 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
         <div>
           {results.length > 0 ? <QueryMessage query={loadingQuery}/> : null}
           {results.length > 0 ? <SearchingFor streaming={true} query={streamingModifiedQuery}/> : null}
-          <AssistantMessage 
-            summary={streamingSummary} 
+          <AssistantMessage
+            summary={streamingSummary}
             results={streamingResults}
+            loading={true}
           />
         </div>
       )}
