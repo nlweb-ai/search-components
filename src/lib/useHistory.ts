@@ -54,20 +54,33 @@ function useStorageSWR<T>(key:string|null, initialValue:T):[T, (data: T) => void
   return [data ?? initialValue, setValue];
 };
 
+export interface Backend {
+  site: string;
+  endpoint: string;
+}
 export interface SearchSession {
   query: string;
   sessionId: string;
+  backend:Backend
 }
-export function useSearchSessions(): {sessions: SearchSession[]; startSession: (sessionId: string, initResult: QueryResultSet) => void} {
+export function useSearchSessions(): {sessions: SearchSession[]; startSession: (sessionId: string, initResult: QueryResultSet, backend: Backend) => void; deleteSession: (sessionId: string) => void} {
   const [sessions, setSessions] = useStorageSWR<SearchSession[]>("/sessions", []);
-  function startSession(sessionId: string, initResult: QueryResultSet) {
+  function startSession(sessionId: string, initResult: QueryResultSet, backend: Backend) {
     // Save the item to to the session
     localStorage.setItem(`/session/${sessionId}`, JSON.stringify([initResult]));
-    setSessions([...sessions, {sessionId: sessionId, query: initResult.query}])
+    setSessions([...sessions, {sessionId: sessionId, query: initResult.query, backend: backend}])
+    mutate(`/session/${sessionId}`, [initResult]);
   }
+  function deleteSession(sessionId: string) {
+    setSessions(sessions.filter(s => s.sessionId != sessionId));
+    localStorage.removeItem(`/session/${sessionId}`);
+    mutate<QueryResultSet[]>(`/session/${sessionId}`, []);
+  }
+  console.log(sessions);
   return {
     sessions: sessions,
-    startSession: startSession
+    startSession: startSession,
+    deleteSession: deleteSession
   }
 }
 

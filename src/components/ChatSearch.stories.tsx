@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChatSearch } from './ChatSearch';
+import { HistorySidebar } from './HistorySidebar'
 import {useState} from 'react';
 import {useSearchSessions, useSearchSession, QueryResultSet} from '../lib/useHistory';
 
@@ -124,39 +125,54 @@ export const WithSearchHistory: Story = {
     const [sessionResults, setSessionResults] = useSearchSession(sessionId);
     function startSearch(firstResult: QueryResultSet) {
       const sessionId = crypto.randomUUID();
-      localSessions.startSession(sessionId, firstResult)
+      localSessions.startSession(sessionId, firstResult, {
+        site: args.site,
+        endpoint: args.endpoint
+      })
       setSessionId(sessionId);
     }
-    console.log(localSessions.sessions);
+    function endSearch() {
+      setSessionId(null);
+    }
     return (
-      <div className="p-8 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">NLWeb Chat Search Playground</h1>
-        <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Using:</span>
-            <span className="px-3 py-1 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-full text-purple-700 font-medium">
-              {args.endpoint == OLD_ENDPOINT ? 'Dev NLWeb' : 'Prod NLWeb'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Searching:</span>
-            <span className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
-              {args.site}
-            </span>
-          </div>
-        </div>
-        <ChatSearch 
-          startSession={startSearch}
-          results={sessionResults} 
-          setResults={setSessionResults} 
-          site={args.site}
-          endpoint={args.endpoint}
+      <div className="flex items-stretch h-full">
+        <HistorySidebar 
+          sessions={localSessions.sessions}
+          onSelect={(session) => setSessionId(session.sessionId)}
+          onDelete={localSessions.deleteSession}
         />
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> This example is driven by the endpoint and site parameters,
-            available in the controls section.
-          </p>
+        <div className='p-8 flex-1'>
+          <div className='max-w-3xl mx-auto'>
+            <ChatSearch 
+              key={sessionId}
+              startSession={startSearch}
+              endSession={endSearch}
+              results={sessionResults} 
+              setResults={setSessionResults} 
+              site={args.site}
+              endpoint={args.endpoint}
+            />
+            <div className="mb-6 flex gap-3 items-center">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-600">Using:</span>
+                <span className="px-3 py-1 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-full text-purple-700 font-medium">
+                  {args.endpoint == OLD_ENDPOINT ? 'Dev NLWeb' : 'Prod NLWeb'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-600">Searching:</span>
+                <span className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
+                  {args.site}
+                </span>
+              </div>
+            </div>
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This example is driven by the endpoint and site parameters,
+                available in the controls section.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     )

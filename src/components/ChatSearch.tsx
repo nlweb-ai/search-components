@@ -274,19 +274,26 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
 const NEW_ENDPOINT_WITH_60_SITES = "https://fwbrdyftb6bvdvgs.fz47.alb.azure.com/ask"
 
 export function ChatSearch({
-  results, setResults, startSession,
+  results, setResults, startSession, endSession,
   endpoint=NEW_ENDPOINT_WITH_60_SITES, site="yoast-site-recipes.azurewebsites.net",
 } : {
   results: QueryResultSet[], 
   setResults: (r: QueryResultSet[]) => void; 
   startSession?: (r: QueryResultSet) => void;
+  endSession?: () => void;
   endpoint: string; site: string}
 ) {
   const nlweb = useNlWeb({
     endpoint: endpoint,
     site: site
   });
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(results.length > 0);
+  function closeSearch() {
+    setSearchOpen(false);
+    if (endSession) {
+      endSession();
+    }
+  }
   const [loadingQuery, setLoadingQuery] = useState<string | null>(null);
   async function handleSearch(query: string, isRoot: boolean) {
     setSearchOpen(true);
@@ -317,9 +324,9 @@ export function ChatSearch({
       <div className="mb-6">
         <SearchQuery loading={nlweb.isLoading} handleSearch={(q) => handleSearch(q, true)}/>
       </div>
-      <Dialog className={'relative z-50'} open={searchOpen} onClose={() => setSearchOpen(false)}>
+      <Dialog className={'relative z-50'} open={searchOpen} onClose={closeSearch}>
         <div className="fixed bg-white inset-0 w-screen h-screen overflow-y-auto p-4">
-          <Button onClick={() => setSearchOpen(false)} className='absolute right-4 top-14'>
+          <Button onClick={closeSearch} className='absolute right-4 top-14'>
             <XMarkIcon className='size-5'/>
           </Button>
           <DialogPanel className={'w-full pt-24'}>
