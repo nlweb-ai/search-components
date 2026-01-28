@@ -50,19 +50,26 @@ function translateResultsToChatMessages(loadingQuery: string | null, streamingSt
     });
 
     // 2. Add assistant message with tool call to nlweb
+    let toolCallContent:Array<TextPart | ToolCallPart> = [
+      {
+        type: 'tool-call',
+        toolCallId: toolCallId,
+        toolName: 'nlweb',
+        args: {
+          query: result.query,
+          conversationHistory: results.slice(0, i).map(r => r.query)
+        }
+      }
+    ]
+    if (result.response.decontextualizedQuery) {
+      toolCallContent  = [{
+          type: 'text',
+          text: `Searching for: ${result.response.decontextualizedQuery}`
+      }, ...toolCallContent];
+    }
     messages.push({
       role: 'assistant',
-      content: [
-        {
-          type: 'tool-call',
-          toolCallId: toolCallId,
-          toolName: 'nlweb',
-          args: {
-            query: result.query,
-            conversationHistory: results.slice(0, i).map(r => r.query)
-          }
-        }
-      ]
+      content: toolCallContent
     });
 
     // 3. Add tool message with the search results
@@ -86,24 +93,18 @@ function translateResultsToChatMessages(loadingQuery: string | null, streamingSt
     // 4. Add assistant message with decontextualized query and summary as text parts
     const assistantContent: Array<TextPart> = [];
 
-    if (result.response.decontextualizedQuery) {
-      assistantContent.push({
-        type: 'text',
-        text: `Decontextualized Query: ${result.response.decontextualizedQuery}`
-      });
-    }
-
     if (result.response.summary) {
       assistantContent.push({
         type: 'text',
         text: result.response.summary
       });
+    } 
+    if (assistantContent.length > 0) {
+       messages.push({
+        role: 'assistant',
+        content: assistantContent
+      });
     }
-
-    messages.push({
-      role: 'assistant',
-      content: assistantContent.length > 0 ? assistantContent : 'No summary available'
-    });
   }
 
   // Handle loading query and streaming state
