@@ -91,7 +91,6 @@ export interface Summary {
 
 function resultTypeIs(result: NlwebResult, type: string) {
   if (Array.isArray(result["@type"])) {
-    console.log(result["@type"], type);
     return result["@type"].includes(type);
   } return result["@type"] == type;
 }
@@ -268,7 +267,7 @@ export function parseSchema(data: Thing): NlwebResult | Summary | null {
   if (summaryResult.success) {
     return summaryResult.data as Summary;
   } else {
-    console.log(data);
+    console.log('failed to parse', data);
   }
 
   // If none match, return null
