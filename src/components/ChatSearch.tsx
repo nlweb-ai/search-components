@@ -330,21 +330,20 @@ export function ChatSearch({
       </div>
       <Dialog className={'relative z-50'} open={searchOpen} onClose={closeSearch}>
         <div className="fixed bg-white inset-0 w-screen h-screen overflow-y-auto p-4">
-          <Button onClick={closeSearch} className='absolute right-4 top-14'>
+          <Button onClick={closeSearch} className='z-50 absolute right-4 top-14'>
             <XMarkIcon className='size-5'/>
           </Button>
           <DialogPanel className={'w-full pt-24'}>
-            {debug ?
-              <div className='absolute top-0 left-0 right-0 top-8'>
-                <DebugToolbar 
-                  loadingQuery={loadingQuery}
-                  site={site}
-                  maxResults={50}
-                  streamingState={nlweb} 
-                  results={results}
-                />
-              </div> : null
-            }
+             <div className='absolute top-0 left-0 right-0 top-8'>
+              <DebugToolbar
+                key="debug-toolbar"
+                loadingQuery={loadingQuery}
+                site={site}
+                maxResults={50}
+                streamingState={nlweb}
+                results={results}
+              />
+            </div>
             <div className='mx-auto pb-24 max-w-7xl'>
               <div className="mb-6 max-w-xl mx-auto">
                 <SearchQuery 

@@ -4,9 +4,7 @@ import { HistorySidebar } from './HistorySidebar'
 import {useState} from 'react';
 import {useSearchSessions, useSearchSession, QueryResultSet} from '../lib/useHistory';
 
-const NEW_ENDPOINT_WITH_60_SITES = "https://fwbrdyftb6bvdvgs.fz47.alb.azure.com/ask"
-const OLD_ENDPOINT = "https://fmfpc5c0aydvf2ft.fz93.alb.azure.com/ask"
-
+const PROD_ENDPOINT = "https://internal-testing.nlweb.ai/ask"
 
 /**
  * ChatSearch provides an interactive conversational search experience with AI-powered summaries.
@@ -30,8 +28,7 @@ const meta: Meta<typeof ChatSearch> = {
       control: 'select',
       description: 'The API endpoint URL for the NLWeb search service. This endpoint handles search queries and returns AI-generated summaries with results.',
       options: [
-        OLD_ENDPOINT,
-        NEW_ENDPOINT_WITH_60_SITES,
+        PROD_ENDPOINT,
       ],
     },
     site: {
@@ -64,7 +61,7 @@ type Story = StoryObj<typeof ChatSearch>;
  */
 export const Default: Story = {
   args: {
-    endpoint: OLD_ENDPOINT,
+    endpoint: PROD_ENDPOINT,
     site: 'yoast-site-recipes.azurewebsites.net',
   },
   render: (args) => {
@@ -73,12 +70,6 @@ export const Default: Story = {
       <div className="p-8 max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">NLWeb Chat Search Playground</h1>
         <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Using:</span>
-            <span className="px-3 py-1 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-full text-purple-700 font-medium">
-              {args.endpoint == OLD_ENDPOINT ? 'Dev NLWeb' : 'Prod NLWeb'}
-            </span>
-          </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gray-600">Searching:</span>
             <span className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
@@ -116,7 +107,7 @@ export const Default: Story = {
  */
 export const WithDebugTools: Story = {
   args: {
-    endpoint: OLD_ENDPOINT,
+    endpoint: PROD_ENDPOINT,
     site: 'yoast-site-recipes.azurewebsites.net',
   },
   render: (args) => {
@@ -128,12 +119,6 @@ export const WithDebugTools: Story = {
           Use the debugger to see raw backend responses, and data that is dropped.
         </div>
         <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Using:</span>
-            <span className="px-3 py-1 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-full text-purple-700 font-medium">
-              {args.endpoint == OLD_ENDPOINT ? 'Dev NLWeb' : 'Prod NLWeb'}
-            </span>
-          </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gray-600">Searching:</span>
             <span className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
@@ -172,24 +157,24 @@ export const WithDebugTools: Story = {
  */
 export const WithSearchHistory: Story = {
   args: {
-    endpoint: OLD_ENDPOINT,
+    endpoint: PROD_ENDPOINT,
     site: 'yoast-site-recipes.azurewebsites.net',
     debug: true,
   },
   render: (args) => {
     const localSessions = useSearchSessions();
-    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [sessionId, setSessionId] = useState<string>(crypto.randomUUID());
     const [sessionResults, setSessionResults] = useSearchSession(sessionId);
     function startSearch(firstResult: QueryResultSet) {
-      const sessionId = crypto.randomUUID();
-      localSessions.startSession(sessionId, firstResult, {
+      const newId = localSessions.sessions.some(s => s.sessionId === sessionId) ? crypto.randomUUID() : sessionId ;
+      localSessions.startSession(newId, firstResult, {
         site: args.site,
         endpoint: args.endpoint
       })
       setSessionId(sessionId);
     }
     function endSearch() {
-      setSessionId(null);
+      setSessionId(crypto.randomUUID());
     }
     return (
       <div className="flex items-stretch h-full">
@@ -211,12 +196,6 @@ export const WithSearchHistory: Story = {
               debug={args.debug}
             />
             <div className="mb-6 flex gap-3 items-center">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600">Using:</span>
-                <span className="px-3 py-1 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-full text-purple-700 font-medium">
-                  {args.endpoint == OLD_ENDPOINT ? 'Dev NLWeb' : 'Prod NLWeb'}
-                </span>
-              </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-gray-600">Searching:</span>
                 <span className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">

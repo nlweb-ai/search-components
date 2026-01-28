@@ -47,7 +47,7 @@ export function HistorySidebar({
   onSelect: (session: SearchSession) => void;
   onDelete: (sessionId: string) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   // Group sessions by site
   const groupedSessions: GroupedSessions = sessions.reduce((acc, session) => {
     const site = session.backend.site;

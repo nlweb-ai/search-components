@@ -1,7 +1,8 @@
 
 import {QueryResultSet} from '../lib/useHistory'
 import {BugAntIcon, XMarkIcon, MagnifyingGlassIcon} from '@heroicons/react/24/solid'
-import {useState} from 'react';
+import {useEffect,
+useState} from 'react';
 import {Dialog, DialogPanel, DialogTitle, Button, Tab, TabGroup, TabList, TabPanel, TabPanels} from '@headlessui/react';
 import {clsx} from 'clsx';
 import { NLWebSearchParams, NLWebSearchState, V054Request, convertParamsToRequest } from '../lib/useNlWeb';
@@ -337,6 +338,10 @@ function MessagesDialog({
 
 export function DebugToolbar({results, loadingQuery, streamingState, site, maxResults} : {results: QueryResultSet[]; loadingQuery: string | null; streamingState: NLWebSearchState; site: string; maxResults: number}) {
   const [messagesOpen, setMessagesOpen] = useState(false);
+  console.log(messagesOpen);
+  useEffect(() => {
+    console.log('moujnted')
+  }, [])
   return (
     <>
       <div className='max-w-5xl flex gap-3 mx-auto p-2 items-center pr-2 px-4 text-sm bg-white border rounded-xl'>
