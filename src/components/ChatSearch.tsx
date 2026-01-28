@@ -4,6 +4,7 @@ import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { MagnifyingGlassIcon, ArrowRightIcon,XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
 import {getThumbnailUrl, NlwebResult} from '../lib/parseSchema';
+import {useSearchSessions, useSearchSession, QueryResultSet} from '../lib/useHistory';
 
 function decodeHtmlEntities(text: string): string {
   return text
@@ -270,23 +271,23 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
   )
 }
 
-interface QueryResultSet {
-  query: string;
-  response: SearchResponse;
-}
-
 const NEW_ENDPOINT_WITH_60_SITES = "https://fwbrdyftb6bvdvgs.fz47.alb.azure.com/ask"
 
 export function ChatSearch({
-  endpoint=NEW_ENDPOINT_WITH_60_SITES, site="yoast-site-recipes.azurewebsites.net"
-} : {endpoint: string; site: string}) {
+  results, setResults, startSession,
+  endpoint=NEW_ENDPOINT_WITH_60_SITES, site="yoast-site-recipes.azurewebsites.net",
+} : {
+  results: QueryResultSet[], 
+  setResults: (r: QueryResultSet[]) => void; 
+  startSession?: (r: QueryResultSet) => void;
+  endpoint: string; site: string}
+) {
   const nlweb = useNlWeb({
     endpoint: endpoint,
     site: site
   });
   const [searchOpen, setSearchOpen] = useState(false);
   const [loadingQuery, setLoadingQuery] = useState<string | null>(null);
-  const [results, setResults] = useState<QueryResultSet[]>([]);
   async function handleSearch(query: string, isRoot: boolean) {
     setSearchOpen(true);
     setLoadingQuery(query);
@@ -304,7 +305,11 @@ export function ChatSearch({
     }
     setLoadingQuery(null);
     nlweb.clearResults();
-    setResults(curr => [...curr, {query: query, response: response}])
+    if (isRoot && startSession) {
+      startSession({query: query, response: response})
+    } else {
+      setResults([...results, {query: query, response: response}])
+    }
   }
   const rootQuery = results.length > 0 ? results[0].query : loadingQuery;
   return (
