@@ -59,7 +59,7 @@ export function HistorySidebar({
   }, {} as GroupedSessions);
 
   return (
-    <div className='relative'>
+    <div className='relative z-50'>
       <div className={
         clsx('absolute -right-10 top-0 h-12 flex items-center')
       }>

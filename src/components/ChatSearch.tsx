@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { ReactNode, useState, useRef } from 'react';
 import { SearchResponse, useNlWeb} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { MagnifyingGlassIcon, ArrowRightIcon,XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
 import {getThumbnailUrl, NlwebResult} from '../lib/parseSchema';
 import {useSearchSessions, useSearchSession, QueryResultSet} from '../lib/useHistory';
+import {DebugToolbar} from './DebugTools';
 
 function decodeHtmlEntities(text: string): string {
   return text
@@ -274,18 +275,21 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
 const NEW_ENDPOINT_WITH_60_SITES = "https://fwbrdyftb6bvdvgs.fz47.alb.azure.com/ask"
 
 export function ChatSearch({
-  results, setResults, startSession, endSession,
+  results, setResults, startSession, endSession, debug, maxResults=50,
   endpoint=NEW_ENDPOINT_WITH_60_SITES, site="yoast-site-recipes.azurewebsites.net",
 } : {
+  debug?: boolean;
   results: QueryResultSet[], 
   setResults: (r: QueryResultSet[]) => void; 
   startSession?: (r: QueryResultSet) => void;
   endSession?: () => void;
+  maxResults?: number;
   endpoint: string; site: string}
 ) {
   const nlweb = useNlWeb({
     endpoint: endpoint,
-    site: site
+    site: site,
+    maxResults: maxResults
   });
   const [searchOpen, setSearchOpen] = useState(results.length > 0);
   function closeSearch() {
@@ -330,6 +334,17 @@ export function ChatSearch({
             <XMarkIcon className='size-5'/>
           </Button>
           <DialogPanel className={'w-full pt-24'}>
+            {debug ?
+              <div className='absolute top-0 left-0 right-0 top-8'>
+                <DebugToolbar 
+                  loadingQuery={loadingQuery}
+                  site={site}
+                  maxResults={50}
+                  streamingState={nlweb} 
+                  results={results}
+                />
+              </div> : null
+            }
             <div className='mx-auto pb-24 max-w-7xl'>
               <div className="mb-6 max-w-xl mx-auto">
                 <SearchQuery 

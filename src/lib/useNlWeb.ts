@@ -23,7 +23,9 @@ export interface NLWebSearchState {
     decontextualizedQuery?: string;
     isLoading: boolean;
     error: string | null;
+    rawLogs?: object[]
 }
+
 
 /**
  * Search request parameters
@@ -35,6 +37,33 @@ export interface NLWebSearchParams {
     userId?: string;
     remember?: boolean;
     conversationHistory?: string[];
+}
+
+/**
+ * v0.54 API Request structure
+ */
+export interface V054Request {
+    query: {
+        text: string;
+        site: string;
+        num_results: number;
+    };
+    prefer: {
+        streaming: boolean;
+        response_format: 'conv_search' | 'chatgpt_app';
+        mode: string;
+    };
+    meta: {
+        api_version: string;
+        user?: {
+            id: string;
+        };
+        remember?: boolean;
+    };
+    context?: {
+        '@type': 'ConversationalContext';
+        prev: string[];
+    };
 }
 
 /**
@@ -51,7 +80,48 @@ export interface SearchResponse {
     results: NlwebResult[];
     decontextualizedQuery?: string;
     summary?: string;
+    rawLogs?: object[]
 }
+
+export function convertParamsToRequest(params: NLWebSearchParams, site: string, maxResults: number): V054Request {
+    const v054Request: V054Request = {
+        query: {
+            text: params.query,
+            site: site,
+            num_results: params.numResults || maxResults,
+        },
+        prefer: {
+            streaming: true,
+            response_format: 'conv_search',
+            mode: 'list, summarize'
+        },
+        meta: {
+            api_version: '0.54',
+        },
+    };
+
+    // Add user metadata if provided
+    if (params.userId) {
+        v054Request.meta.user = {
+            id: params.userId,
+        };
+    }
+
+    // Add remember flag if provided
+    if (params.remember) {
+        v054Request.meta.remember = true;
+    }
+
+    // Add conversation context if available
+    if (params.conversationHistory && params.conversationHistory.length > 0) {
+        v054Request.context = {
+            '@type': 'ConversationalContext',
+            prev: params.conversationHistory.slice(-5), // Last 5 queries
+        };
+    }
+
+    return v054Request;
+} 
 
 /**
  * Custom hook for NLWeb search with SSE streaming support
@@ -62,10 +132,12 @@ export interface SearchResponse {
 export function useNlWeb(config: UseNlWebConfig) {
     const { endpoint, site, maxResults = 50 } = config;
 
+    
     const [state, setState] = useState<NLWebSearchState>({
         results: [],
         isLoading: false,
         error: null,
+        rawLogs: []
     });
 
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -97,6 +169,7 @@ export function useNlWeb(config: UseNlWebConfig) {
         const accumulatedResults: NlwebResult[] = [];
         let summary:string = '';
         let decontextualizedQuery:string = '';
+        const debugLogs:object[] = [];
         try {
             while (true) {
                 const { value, done } = await reader.read();
@@ -105,13 +178,12 @@ export function useNlWeb(config: UseNlWebConfig) {
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
                 for (const line of lines) {
                     if (!line.trim() || !line.startsWith('data: ')) continue;
                     try {
                         const dataStr = line.slice(6); // Remove 'data: ' prefix
                         const data = JSON.parse(dataStr);
-                        console.log(data);
+                        debugLogs.push(data)
                         // Check metadata, if present
                         if (data._meta) {
                              // Check for failure response
@@ -122,6 +194,7 @@ export function useNlWeb(config: UseNlWebConfig) {
                                 decontextualizedQuery = data._meta.decontextualized_query;
                                  setState(prev => ({
                                     ...prev,
+                                    rawLogs: debugLogs,
                                     decontextualizedQuery: decontextualizedQuery
                                 }));
                             }
@@ -151,6 +224,7 @@ export function useNlWeb(config: UseNlWebConfig) {
                             const sortedResults = sortResultsByScore(accumulatedResults);
                             setState(prev => ({
                                 ...prev,
+                                rawLogs: debugLogs,
                                 summary: summary,
                                 results: sortedResults,
                             }));
@@ -174,6 +248,7 @@ export function useNlWeb(config: UseNlWebConfig) {
                             const sortedResults = sortResultsByScore(accumulatedResults);
                             setState(prev => ({
                                 ...prev,
+                                rawLogs: debugLogs,
                                 results: sortedResults,
                             }));
                         }
@@ -187,7 +262,8 @@ export function useNlWeb(config: UseNlWebConfig) {
             return {
                 results: sortResultsByScore(accumulatedResults),
                 summary: summary,
-                decontextualizedQuery: decontextualizedQuery
+                decontextualizedQuery: decontextualizedQuery,
+                rawLogs: debugLogs
             }
         } finally {
             reader.releaseLock();
@@ -214,46 +290,12 @@ export function useNlWeb(config: UseNlWebConfig) {
             results: [],
             isLoading: true,
             error: null,
+            rawLogs: []
         });
 
         try {
             // Build v0.54 request
-            const v054Request: any = {
-                query: {
-                    text: params.query,
-                    site: site,
-                    num_results: params.numResults || maxResults,
-                },
-                prefer: {
-                    streaming: true,
-                    response_format: 'conv_search',
-                    mode: 'list, summarize'
-                },
-                meta: {
-                    api_version: '0.54',
-                },
-            };
-
-            // Add user metadata if provided
-            if (params.userId) {
-                v054Request.meta.user = {
-                    id: params.userId,
-                };
-            }
-
-            // Add remember flag if provided
-            if (params.remember) {
-                v054Request.meta.remember = true;
-            }
-
-            // Add conversation context if available
-            if (params.conversationHistory && params.conversationHistory.length > 0) {
-                v054Request.context = {
-                    '@type': 'ConversationalContext',
-                    prev: params.conversationHistory.slice(-5), // Last 5 queries
-                };
-            }
-
+            const v054Request = convertParamsToRequest(params, site, maxResults)
             // Send POST request to get streaming response
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -278,6 +320,7 @@ export function useNlWeb(config: UseNlWebConfig) {
                 summary: results.summary,
                 isLoading: false,
                 error: null,
+                rawLogs: results.rawLogs
             });
 
             return results;
@@ -289,13 +332,15 @@ export function useNlWeb(config: UseNlWebConfig) {
                     results: [],
                     isLoading: false,
                     error: errorMessage,
+                    rawLogs:[]
                 });
                 throw error;
             }
 
             // Return empty results if aborted
             return {
-              results: []
+              results: [],
+              rawLogs: []
             };
         }
     }, [endpoint, site, maxResults, handleStreamingResponse]);
