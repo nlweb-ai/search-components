@@ -37,7 +37,10 @@ const meta: Meta<typeof ChatSearch> = {
       options: [
         'yoast-site-recipes.azurewebsites.net',
         'yoast-site-rss.azurewebsites.net',
+        // Recipes
         'ambitiouskitchen.com',
+        // Movies
+        'imdb.com',
       ],
       table: {
         type: { summary: 'string' },

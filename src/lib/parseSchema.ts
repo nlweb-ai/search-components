@@ -1,10 +1,9 @@
 import {Thing} from 'schema-dts';
 import {z} from 'zod';
+import { filterTruthy } from './util';
 
-export interface Summary {
-  "@type" : "Summary";
-  text: string;
-}
+
+// === SUPPORTING SCHEMAS ===
 
 // Zod validator for ImageObject
 const ImageObjectSchema = z.object({
@@ -23,6 +22,72 @@ const ImageSchema = z.union([
 
 export type ImageType = z.infer<typeof ImageSchema>;
 
+// Person schema for director/actor
+const PersonSchema = z.object({
+  "@type": z.literal("Person").optional(),
+  name: z.string(),
+  url: z.string().optional(),
+}).passthrough();
+export type PersonType = z.infer<typeof PersonSchema>;
+
+// Organization schema for productionCompany, publisher
+const OrganizationSchema = z.object({
+  "@type": z.literal("Organization").optional(),
+  name: z.string(),
+  url: z.string().optional(),
+}).passthrough();
+export type OrganizationType = z.infer<typeof OrganizationSchema>;
+
+// Rating schema for review ratings
+const RatingSchema = z.object({
+  "@type": z.literal("Rating").optional(),
+  ratingValue: z.union([z.string(), z.number()]),
+  bestRating: z.union([z.string(), z.number()]).optional(),
+  worstRating: z.union([z.string(), z.number()]).optional(),
+}).passthrough();
+export type RatingType = z.infer<typeof RatingSchema>;  
+
+// AggregateRating schema
+const AggregateRatingSchema = z.object({
+  "@type": z.literal("AggregateRating").optional(),
+  ratingValue: z.union([z.string(), z.number()]),
+  bestRating: z.union([z.string(), z.number()]).optional(),
+  worstRating: z.union([z.string(), z.number()]).optional(),
+  ratingCount: z.union([z.string(), z.number()]).optional(),
+  reviewCount: z.union([z.string(), z.number()]).optional(),
+}).passthrough();
+export type AggregateRatingType = z.infer<typeof AggregateRatingSchema>;
+
+// Review schema
+const ReviewSchema = z.object({
+  "@type": z.literal("Review").optional(),
+  datePublished: z.string().optional(),
+  reviewBody: z.string().optional(),
+  reviewRating: RatingSchema.optional(),
+  author: z.union([PersonSchema, OrganizationSchema, z.string()]).optional(),
+}).passthrough();
+export type ReviewType = z.infer<typeof ReviewSchema>;
+
+// VideoObject schema for trailer
+const VideoObjectSchema = z.object({
+  "@type": z.literal("VideoObject").optional(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  uploadDate: z.string().optional(),
+  contentUrl: z.string().optional(),
+  embedUrl: z.string().optional(),
+  duration: z.string().optional(),
+}).passthrough();
+export type VideoObjectType = z.infer<typeof VideoObjectSchema>;
+
+
+// === NLWEB RESULT SCHEMAS ===
+
+export interface Summary {
+  "@type" : "Summary";
+  text: string;
+}
 
 function resultTypeIs(result: NlwebResult, type: string) {
   if (Array.isArray(result["@type"])) {
@@ -30,13 +95,22 @@ function resultTypeIs(result: NlwebResult, type: string) {
   } return result["@type"] == type;
 }
 
-export function getThumbnailUrl(result: NlwebResult) {
-  if (resultTypeIs(result, "Article") && typeof result.thumbnailUrl == 'string') {
-    if (result.thumbnailUrl.startsWith('http')) {
-      return result.thumbnailUrl;
-    }
-    return `https://${result.site}${result.thumbnailUrl}`;
-  } return getImageUrl(result.image);
+/**
+ * Based on the result `@type`, extract possible thumbnail URLs. Different types
+ * have different candidates to try; the rules here are based on what works empirically.
+ * The `Thumbnail` component uses this to try each candidate in order until one works.
+ */
+export function getThumbnailCandidates(result: NlwebResult): string[] {
+  if (isArticleResult(result) && typeof result.thumbnailUrl === 'string') {
+    const thumbnailUrl = result.thumbnailUrl ? (
+      result.thumbnailUrl.startsWith('http') ? result.thumbnailUrl : `https://${result.site}${result.thumbnailUrl}`
+    ) : null;
+    return filterTruthy([ thumbnailUrl, getImageUrl(result.image) ]);
+  }
+  if (isMovieResult(result)) {
+    return filterTruthy([ getImageUrl(result.image), result.trailer?.thumbnailUrl ]);
+  }
+  return filterTruthy([getImageUrl(result.image)]);
 }
 
 // Helper function to extract image URL from various image formats
@@ -90,6 +164,10 @@ const RecipeSchema = z.object({
 }).passthrough(); // Allow additional properties
 export type RecipeResult = z.infer<typeof RecipeSchema>;
 
+export function isRecipeResult(result: NlwebResult): result is RecipeResult {
+  return resultTypeIs(result, "Recipe");
+}
+
 // Zod validator for Article
 const ArticleSchema = z.object({
   "@type": z.union([
@@ -115,6 +193,48 @@ const ArticleSchema = z.object({
 }).passthrough(); // Allow additional properties
 export type ArticleResult = z.infer<typeof ArticleSchema>
 
+export function isArticleResult(result: NlwebResult): result is ArticleResult {
+  return resultTypeIs(result, "Article") ||
+         resultTypeIs(result, "NewsArticle") ||
+         resultTypeIs(result, "BlogPosting");
+}
+
+const MovieSchema = z.object({
+  "@type": z.union([
+    z.literal("Movie"),
+    z.array(z.string()).refine((arr) => arr.includes("Movie"), {
+      message: "Array must contain 'Movie'"
+    })
+  ]),
+  "@id": z.string(),
+  score: z.number(),
+  site: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  image: ImageSchema.optional(),
+  url: z.string().optional(),
+  genre: z.array(z.string()).optional(),
+  datePublished: z.string().optional(),
+  director: z.union([PersonSchema, z.array(PersonSchema)]).optional(),
+  actor: z.union([PersonSchema, z.array(PersonSchema)]).optional(),
+  aggregateRating: AggregateRatingSchema.optional(),
+  duration: z.string().optional(),
+  contentRating: z.string().optional(),
+  productionCompany: z.union([OrganizationSchema, z.array(OrganizationSchema)]).optional(),
+  trailer: VideoObjectSchema.optional(),
+  review: z.union([ReviewSchema, z.array(ReviewSchema)]).optional(),
+  sameAs: z.array(z.string()).optional(),
+  // Additional schema.org/Movie properties
+  countryOfOrigin: z.any().optional(),
+  musicBy: z.union([PersonSchema, z.array(PersonSchema)]).optional(),
+  producer: z.union([PersonSchema, OrganizationSchema, z.array(z.union([PersonSchema, OrganizationSchema]))]).optional(),
+}).passthrough(); // Allow additional properties
+export type MovieResult = z.infer<typeof MovieSchema>;
+
+export function isMovieResult(result: NlwebResult): result is MovieResult {
+  return resultTypeIs(result, "Movie");
+}
+
 // Zod validator for Summary
 const SummarySchema = z.object({
   "@type": z.literal("Summary"),
@@ -122,13 +242,18 @@ const SummarySchema = z.object({
 }).passthrough(); // Allow additional properties
 
 
-export type NlwebResult = RecipeResult | ArticleResult;
+export type NlwebResult = RecipeResult | ArticleResult | MovieResult;
 
 export function parseSchema(data: Thing): NlwebResult | Summary | null {
   // Try to parse as Recipe
   const recipeResult = RecipeSchema.safeParse(data);
   if (recipeResult.success) {
     return recipeResult.data as RecipeResult;
+  }
+
+  const movieResult = MovieSchema.safeParse(data);
+  if (movieResult.success) {
+    return movieResult.data as MovieResult;
   }
 
   // Try to parse as Article
