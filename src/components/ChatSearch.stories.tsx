@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChatSearch } from './ChatSearch';
 import { HistorySidebar } from './HistorySidebar'
-import { DebugToolbar } from './DebugTools'
+import { DebugTool } from './DebugTools'
 import {SiteDropdown, type Site} from "./SiteDropdown"
 import {useState} from 'react';
 import {SearchSession,
@@ -110,8 +110,7 @@ export const WithDebugTools: Story = {
           nlweb={nlweb}
         >
           <div className='fixed left-4 top-12 z-50'>
-            <DebugToolbar
-              key="debug-toolbar"
+            <DebugTool
               site={site.url}
               maxResults={50}
               streamingState={nlweb}

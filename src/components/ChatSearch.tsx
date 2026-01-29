@@ -1,13 +1,10 @@
 import { ReactNode, useState, useRef } from 'react';
-import { NLWeb,
-NLWebSearchState,
-SearchResponse, useNlWeb} from '../lib/useNlWeb';
+import { NLWeb, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { MagnifyingGlassIcon, ArrowRightIcon,XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
 import {getThumbnailUrl, NlwebResult} from '../lib/parseSchema';
-import {useSearchSessions, useSearchSession, QueryResultSet} from '../lib/useHistory';
-import {DebugToolbar} from './DebugTools';
+import {QueryResultSet} from '../lib/useHistory';
 
 function decodeHtmlEntities(text: string): string {
   return text

@@ -144,7 +144,7 @@ function MessagesDialog({
   );
 }
 
-export function DebugToolbar({results, streamingState, site, maxResults} : {results: QueryResultSet[]; streamingState: NLWebSearchState; site: string; maxResults: number}) {
+export function DebugTool({results, streamingState, site, maxResults} : {results: QueryResultSet[]; streamingState: NLWebSearchState; site: string; maxResults: number}) {
   const [messagesOpen, setMessagesOpen] = useState(false);
   return (
     <>
