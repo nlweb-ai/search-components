@@ -1,12 +1,11 @@
 import { ReactNode, useState, useRef, ImgHTMLAttributes } from 'react';
-import { SearchResponse, useNlWeb} from '../lib/useNlWeb';
+import { NLWeb, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { MagnifyingGlassIcon, ArrowRightIcon,XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
 import { getThumbnailCandidates, isMovieResult, NlwebResult } from '../lib/parseSchema';
 import { shortQuantity, intersperse } from '../lib/util';
-import {useSearchSessions, useSearchSession, QueryResultSet} from '../lib/useHistory';
-import {DebugToolbar} from './DebugTools';
+import {QueryResultSet} from '../lib/useHistory';
 
 function decodeHtmlEntities(text: string): string {
   return text
@@ -342,22 +341,15 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
 const NEW_ENDPOINT_WITH_60_SITES = "https://fwbrdyftb6bvdvgs.fz47.alb.azure.com/ask"
 
 export function ChatSearch({
-  results, setResults, startSession, endSession, debug, maxResults=50,
-  endpoint=NEW_ENDPOINT_WITH_60_SITES, site="yoast-site-recipes.azurewebsites.net",
+  results, setResults, startSession, endSession,
+  nlweb, children
 } : {
-  debug?: boolean;
   results: QueryResultSet[], 
   setResults: (r: QueryResultSet[]) => void; 
   startSession?: (r: QueryResultSet) => void;
   endSession?: () => void;
-  maxResults?: number;
-  endpoint: string; site: string}
-) {
-  const nlweb = useNlWeb({
-    endpoint: endpoint,
-    site: site,
-    maxResults: maxResults
-  });
+  nlweb: NLWeb; children?: ReactNode
+}) {
   const [searchOpen, setSearchOpen] = useState(results.length > 0);
   function closeSearch() {
     setSearchOpen(false);
@@ -365,10 +357,8 @@ export function ChatSearch({
       endSession();
     }
   }
-  const [loadingQuery, setLoadingQuery] = useState<string | null>(null);
   async function handleSearch(query: string, isRoot: boolean) {
     setSearchOpen(true);
-    setLoadingQuery(query);
     let response: SearchResponse;
     if (isRoot) {
       setResults([]);
@@ -381,7 +371,6 @@ export function ChatSearch({
         conversationHistory: results.map(r => r.query)
       })
     }
-    setLoadingQuery(null);
     nlweb.clearResults();
     if (isRoot && startSession) {
       startSession({query: query, response: response})
@@ -389,11 +378,12 @@ export function ChatSearch({
       setResults([...results, {query: query, response: response}])
     }
   }
-  const rootQuery = results.length > 0 ? results[0].query : loadingQuery;
+  const rootQuery = results.length > 0 ? results[0].query : nlweb.loadingQuery;
+  const isLoading = !!nlweb.loadingQuery;
   return (
     <div>
       <div className="mb-6">
-        <SearchQuery loading={nlweb.isLoading} handleSearch={(q) => handleSearch(q, true)}/>
+        <SearchQuery loading={!!nlweb.loadingQuery} handleSearch={(q) => handleSearch(q, true)}/>
       </div>
       <Dialog className={'relative z-50'} open={searchOpen} onClose={closeSearch}>
         <div className="fixed bg-white inset-0 w-screen h-screen overflow-y-auto p-4">
@@ -401,29 +391,20 @@ export function ChatSearch({
             <XMarkIcon className='size-5'/>
           </Button>
           <DialogPanel className={'w-full pt-24'}>
-             <div className='absolute top-0 left-0 right-0 top-8'>
-              <DebugToolbar
-                key="debug-toolbar"
-                loadingQuery={loadingQuery}
-                site={site}
-                maxResults={50}
-                streamingState={nlweb}
-                results={results}
-              />
-            </div>
+            {children}
             <div className='mx-auto pb-24 max-w-7xl'>
               <div className="mb-6 max-w-xl mx-auto">
                 <SearchQuery 
                   key={rootQuery || 'empty-search'}
                   className='bg-gray-50' 
-                  loading={nlweb.isLoading} 
+                  loading={isLoading} 
                   handleSearch={(q) => handleSearch(q, true)}
                   initQuery={rootQuery}
                 />
               </div>
 
               <ChatResults
-                loadingQuery={loadingQuery}
+                loadingQuery={nlweb.loadingQuery}
                 streamingResults={nlweb.results}
                 streamingSummary={nlweb.summary || null}
                 streamingModifiedQuery={nlweb.decontextualizedQuery || null}
@@ -433,8 +414,8 @@ export function ChatSearch({
               <div className="fixed bottom-8 left-0 right-0">
                 <div className='max-w-xl mx-auto'>
                   <SearchQuery 
-                    key={loadingQuery}
-                    loading={nlweb.isLoading} 
+                    key={nlweb.loadingQuery}
+                    loading={isLoading} 
                     handleSearch={(q) => handleSearch(q, false)}
                     className='shadow-xl bg-white'
                     placeholder="Enter a follow up query"
