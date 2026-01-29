@@ -101,16 +101,31 @@ function resultTypeIs(result: NlwebResult, type: string) {
  * The `Thumbnail` component uses this to try each candidate in order until one works.
  */
 export function getThumbnailCandidates(result: NlwebResult): string[] {
+  function filter<T>(candidates: (T | null | undefined)[]): T[] {
+    return deduplicate(filterTruthy(candidates));
+  }
+
   if (isArticleResult(result) && typeof result.thumbnailUrl === 'string') {
     const thumbnailUrl = result.thumbnailUrl ? (
       result.thumbnailUrl.startsWith('http') ? result.thumbnailUrl : `https://${result.site}${result.thumbnailUrl}`
     ) : null;
-    return filterTruthy([ thumbnailUrl, getImageUrl(result.image) ]);
+    return filter([ thumbnailUrl, getImageUrl(result.image) ]);
   }
   if (isMovieResult(result)) {
-    return filterTruthy([ getImageUrl(result.image), result.trailer?.thumbnailUrl ]);
+    return filter([ getImageUrl(result.image), result.trailer?.thumbnailUrl ]);
   }
-  return filterTruthy([getImageUrl(result.image)]);
+  return filter([getImageUrl(result.image)]);
+}
+
+function deduplicate<T>(array: T[]): T[] {
+  const seen = new Set<T>();
+  return array.filter(item => {
+    if (seen.has(item)) {
+      return false;
+    }
+    seen.add(item);
+    return true;
+  });
 }
 
 // Helper function to extract image URL from various image formats

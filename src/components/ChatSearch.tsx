@@ -219,16 +219,17 @@ function Thumbnail({ srcs, className, ...rest }: { srcs: string[]; } & ImgHTMLAt
       {srcsExhausted ? (
         <NewspaperIcon className='absolute size-5 text-gray-400'/>
       ) : (
-        <img
-          src={srcs[srcIndex]}
-          className={clsx(
-            "w-full h-full object-cover rounded",
-            srcsExhausted && 'invisible',
-          )}
-          {...rest}
-          onError={advance}
-        />
+        null
       )}
+      <img
+        src={srcs[srcIndex]}
+        className={clsx(
+          "w-full h-full object-cover rounded",
+          srcsExhausted && 'invisible',
+        )}
+        {...rest}
+        onError={advance}
+      />
     </div>
   );
 }
