@@ -1,9 +1,10 @@
-import { ReactNode, useState, useRef } from 'react';
+import { ReactNode, useState, useRef, ImgHTMLAttributes } from 'react';
 import { NLWeb, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { MagnifyingGlassIcon, ArrowRightIcon,XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
-import {getThumbnailUrl, NlwebResult} from '../lib/parseSchema';
+import { getThumbnailCandidates, isMovieResult, NlwebResult } from '../lib/parseSchema';
+import { shortQuantity, intersperse } from '../lib/util';
 import {QueryResultSet} from '../lib/useHistory';
 
 function decodeHtmlEntities(text: string): string {
@@ -118,12 +119,7 @@ function ResultCardSkeleton() {
 }
 
 function ResultCard({result} : {result: NlwebResult}) {
-  const imageUrl = getThumbnailUrl(result)
-  const [error, setError] = useState(false);
-
-  const handleError = () => {
-    setError(true);
-  };
+  const srcs = getThumbnailCandidates(result)
 
   return (
     <a
@@ -133,21 +129,15 @@ function ResultCard({result} : {result: NlwebResult}) {
       className="block no-underline! transition-all duration-200 overflow-hidden"
     >
       <div className="flex flex-col gap-3">
-        <div className={clsx("text-xs flex-shrink-0 h-36 rounded", error || !imageUrl ? 'bg-gray-100 flex items-center justify-center' : '')}>
-          {imageUrl ?
-            <img
-              src={imageUrl}
-              alt={decodeHtmlEntities((result.name || result.title || 'Result image') as string)}
-              className={clsx("w-full h-full object-cover rounded", error ? 'invisible' : '')}
-              onError={handleError}
-            /> : null
-          }
-          {!imageUrl || error ? <NewspaperIcon className='absolute size-5 text-gray-400'/> : null}
-        </div>
+        <Thumbnail
+          srcs={srcs}
+          alt={decodeHtmlEntities((result.name || result.title || 'Result image') as string)}
+        />
         <div className="flex-1 min-w-0">
           <h3 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
             {decodeHtmlEntities((result.name || result.title || 'Untitled') as string)}
           </h3>
+          <ResultCardDetails result={result} />
           {result.description && (
             <p className="text-xs text-gray-600 line-clamp-3 mb-2">
               {typeof result.description == "string" ? decodeHtmlEntities(result.description) : ""}
@@ -165,6 +155,83 @@ function ResultCard({result} : {result: NlwebResult}) {
       </div>
     </a>
   )
+}
+
+/**
+ * `@type`-specific details for rendering inside a result card.
+ */
+function ResultCardDetails({ result }: { result: NlwebResult }) {
+  if (isMovieResult(result)) {
+    return (
+      <>
+        {result.director && (
+          <div className="text-xs text-gray-500 font-semibold">
+            {Array.isArray(result.director) ? result.director.map(d => d.name).join(', ') : result.director.name}
+          </div>
+        )}
+        <div className="flex items-center gap-1">
+          {intersperse([
+            result.aggregateRating?.ratingValue ?
+              <span className="flex items-center gap-1">
+                <span className="text-yellow-500">★</span>
+                <span className="text-xs">{
+                  typeof result.aggregateRating.ratingValue === 'number' ?
+                    result.aggregateRating.ratingValue.toFixed(1) :
+                    result.aggregateRating.ratingValue
+                }</span>
+              </span> :
+              null,
+            result.aggregateRating?.ratingCount ?
+              <span className="text-xs text-gray-500">
+                {shortQuantity(result.aggregateRating.ratingCount)} review{result.aggregateRating.ratingCount != 1 ? 's' : ''}
+              </span> :
+              null,
+          ].filter(Boolean), <span className="text-xs text-gray-400">|</span>)}
+        </div>
+      </>
+    )
+  }
+
+  return null;
+}
+
+function Thumbnail({ srcs, className, ...rest }: { srcs: string[]; } & ImgHTMLAttributes<HTMLImageElement>) {
+  // We allow `hasError` to advance this until we exhaust all srcs, at which point
+  // we render the placeholder icon.
+  const [srcIndex, setSrcIndex] = useState(0);
+  
+  function advance() {
+    setSrcIndex((srcIndex) => {
+      const nextIndex = srcIndex + 1;
+      return Math.min(nextIndex, srcs.length);
+    });
+  }
+
+  const srcsExhausted = srcIndex >= srcs.length;
+
+  return (
+    <div
+      className={clsx(
+        "text-xs flex-shrink-0 h-36 rounded",
+        srcsExhausted && 'bg-gray-100 flex items-center justify-center',
+        className,
+      )}
+    >
+      {srcsExhausted ? (
+        <NewspaperIcon className='absolute size-5 text-gray-400'/>
+      ) : (
+        <img
+          src={srcs[srcIndex]}
+          className={clsx(
+            "w-full h-full object-cover rounded",
+            srcsExhausted && 'invisible',
+          )}
+          {...rest}
+          onError={advance}
+        />
+      )}
+    </div>
+  );
 }
 
 function SummaryCard({summary} : {summary? : string | null}) {
