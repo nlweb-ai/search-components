@@ -159,7 +159,7 @@ export const WithSearchHistory: Story = {
         site: site.url,
         endpoint: PROD_ENDPOINT
       })
-      setSessionId(sessionId);
+      setSessionId(newId);
     }
     function endSearch() {
       setSessionId(crypto.randomUUID());
@@ -171,11 +171,12 @@ export const WithSearchHistory: Story = {
       });
     }
     return (
-      <div className="flex items-stretch h-full">
+      <div className="h-screen flex items-stretch">
         <HistorySidebar
           sessions={localSessions.sessions}
           onSelect={selectSession}
           onDelete={localSessions.deleteSession}
+          onCreate={endSearch}
         />
         <div className='p-8 flex-1'>
           <div className='max-w-3xl mx-auto'>
@@ -186,7 +187,15 @@ export const WithSearchHistory: Story = {
               results={sessionResults}
               setResults={setSessionResults}
               nlweb={nlweb}
-            />
+              sidebar={<HistorySidebar
+                sessions={localSessions.sessions}
+                onSelect={selectSession}
+                onDelete={localSessions.deleteSession}
+                onCreate={endSearch}
+              />}
+            >
+        
+            </ChatSearch>
             <SiteDropdown 
               sites={SITES} 
               selected={site} 

@@ -1,7 +1,7 @@
 
 import {SearchSession} from '../lib/useHistory';
 import { Button } from '@headlessui/react';
-import {XMarkIcon, GlobeAltIcon, Bars3Icon} from '@heroicons/react/24/solid'
+import {XMarkIcon, GlobeAltIcon, PencilSquareIcon, Bars3Icon} from '@heroicons/react/24/solid'
 import { Transition } from '@headlessui/react'
 import {useState} from 'react';
 import {clsx} from 'clsx';
@@ -13,8 +13,8 @@ interface GroupedSessions {
 function SiteBadge({site} : {site: string}) {
   const siteParts = site.split('.')
   return (
-    <div className='px-3 py-2 flex gap-2 items-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
-      <GlobeAltIcon className='size-3'/> {siteParts[0]}
+    <div className='px-3 py-2 flex gap-2 items-center text-xs font-medium text-gray-400 uppercase'>
+      {siteParts[0]}
     </div>
   )
 }
@@ -41,11 +41,13 @@ function SessionButton({session, onSelect, onDelete} : {session: SearchSession; 
 export function HistorySidebar({
   sessions,
   onSelect,
-  onDelete
+  onDelete,
+  onCreate,
 }: {
   sessions: SearchSession[];
   onSelect: (session: SearchSession) => void;
   onDelete: (sessionId: string) => void;
+  onCreate: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   // Group sessions by site
@@ -57,52 +59,60 @@ export function HistorySidebar({
     acc[site].push(session);
     return acc;
   }, {} as GroupedSessions);
-
+  console.log(isOpen);
   return (
-    <div className='relative z-50'>
-      <div className={
-        clsx('absolute -right-10 top-0 h-12 flex items-center')
-      }>
-        <Button onClick={() => setIsOpen(!isOpen)} className={'text-gray-400 hover:text-gray-700 transition-colors rounded-lg w-7 h-7 hover:bg-gray-50 flex items-center justify-center'}>
-          <Bars3Icon className='size-5'/>
-        </Button>
-      </div>
-      <Transition show={isOpen}>
-        <div className={clsx(
-          'min-w-64 border-r h-full bg-gray-50 overflow-y-auto',
-          'data-enter:duration-100 data-enter:data-closed:-translate-x-full',
-            // Leaving styles
-          'data-leave:duration-300 data-leave:data-closed:-translate-x-full',
-        )}>
-          <div className='h-12 items-center font-medium border-b  p-4 pb-0 text-xs text-gray-500 '>
-            Search History
-          </div>
-
-          <div className='divide-y'>
-            {Object.entries(groupedSessions).map(([site, siteSessions]) => (
-              <div key={site} className='p-2'>
-                <SiteBadge site={site}/>
-                <div className='space-y-1'>
-                  {siteSessions.map((session) => (
-                    <SessionButton
-                      key={session.sessionId}
-                      session={session}
-                      onSelect={() => onSelect(session)}
-                      onDelete={() => onDelete(session.sessionId)}
-                    />
+    <div className={clsx('flex-1 flex flex-col  relative z-50 transition-all', isOpen ? 'max-w-80' : 'max-w-12')}>
+        <div className='flex flex-col flex-1 overflow-hidden'>
+            <div className={
+              clsx('absolute right-2 top-0 h-12 flex items-center', !isOpen ? 'left-2 flex justify-center' : '')
+            }>
+              <Button onClick={() => setIsOpen(!isOpen)} className={'text-gray-400 hover:text-gray-700 transition-colors rounded-lg w-7 h-7 hover:bg-gray-50 flex items-center justify-center'}>
+                <Bars3Icon className='size-5'/>
+              </Button>
+            </div>
+            <div className={clsx(
+              'border-r min-w-64 bg-gray-50 overflow-y-auto',
+              'flex-1 data-closed:opacity-0'
+            )}>
+              <div className={clsx('h-12 items-center font-medium  p-4 px-5 pb-0 pointer-events-none text-xs text-gray-500 transition-opacity', isOpen ? 'opacity-100' : 'opacity-0')}>
+                Chats
+              </div>
+              <div className='px-2'>
+                <Button onClick={onCreate} className={clsx('flex items-center gap-2 text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md truncate', isOpen ? 'w-full' : '')}>
+                  <PencilSquareIcon className='size-4 text-gray-400'/>
+                  <Transition show={isOpen}>
+                    <div>New Chat</div>
+                  </Transition>
+                </Button>
+              </div>
+              <Transition show={isOpen}>
+                <div className='divide-y'>
+                  {Object.entries(groupedSessions).map(([site, siteSessions]) => (
+                    <div key={site} className='p-2'>
+                      <SiteBadge site={site}/>
+                      <div className='space-y-1'>
+                        {siteSessions.map((session) => (
+                          <SessionButton
+                            key={session.sessionId}
+                            session={session}
+                            onSelect={() => onSelect(session)}
+                            onDelete={() => onDelete(session.sessionId)}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
-                </div>
-              </div>
-            ))}
 
-            {sessions.length === 0 && (
-              <div className='px-3 py-8 text-sm text-gray-500 text-center'>
-                No search history yet
-              </div>
-            )}
-          </div>
-        </div>
-      </Transition>
+                  {sessions.length === 0 && (
+                    <div className='px-3 py-8 text-sm text-gray-500 text-center'>
+                      No search history yet
+                    </div>
+                  )}
+                </div>
+              </Transition>
+            </div>
+        
+      </div>
     </div>
   )
 }

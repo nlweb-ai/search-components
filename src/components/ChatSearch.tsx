@@ -19,7 +19,7 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&nbsp;/g, ' ');
 }
 
-function SearchQuery({initQuery, className, loading, handleSearch, placeholder="Search..."} : {initQuery?: string | null; className?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
+function SearchQuery({initQuery, className, loading, handleSearch, placeholder="Ask anything..."} : {initQuery?: string | null; className?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
   const [query, setQuery] = useState(initQuery || '');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -208,11 +208,10 @@ function Thumbnail({ srcs, className, ...rest }: { srcs: string[]; } & ImgHTMLAt
   }
 
   const srcsExhausted = srcIndex >= srcs.length;
-
   return (
     <div
       className={clsx(
-        "text-xs flex-shrink-0 h-36 rounded",
+        "relative text-xs flex-shrink-0 h-36 rounded",
         srcsExhausted && 'bg-gray-100 flex items-center justify-center',
         className,
       )}
@@ -338,17 +337,16 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
   )
 }
 
-const NEW_ENDPOINT_WITH_60_SITES = "https://fwbrdyftb6bvdvgs.fz47.alb.azure.com/ask"
-
 export function ChatSearch({
   results, setResults, startSession, endSession,
-  nlweb, children
+  nlweb, children, sidebar,
 } : {
   results: QueryResultSet[], 
   setResults: (r: QueryResultSet[]) => void; 
   startSession?: (r: QueryResultSet) => void;
   endSession?: () => void;
   nlweb: NLWeb; children?: ReactNode
+  sidebar?: ReactNode
 }) {
   const [searchOpen, setSearchOpen] = useState(results.length > 0);
   function closeSearch() {
@@ -361,7 +359,6 @@ export function ChatSearch({
     setSearchOpen(true);
     let response: SearchResponse;
     if (isRoot) {
-      setResults([]);
       response = await nlweb.search({
         query: query
       })
@@ -372,8 +369,14 @@ export function ChatSearch({
       })
     }
     nlweb.clearResults();
-    if (isRoot && startSession) {
-      startSession({query: query, response: response})
+    if (isRoot) {
+      if (startSession) {
+        // Start a new session with the results
+        startSession({query: query, response: response})
+      } else {
+        // Just reset as the first result
+        setResults([{query: query, response: response}])
+      }
     } else {
       setResults([...results, {query: query, response: response}])
     }
@@ -386,42 +389,48 @@ export function ChatSearch({
         <SearchQuery loading={!!nlweb.loadingQuery} handleSearch={(q) => handleSearch(q, true)}/>
       </div>
       <Dialog className={'relative z-50'} open={searchOpen} onClose={closeSearch}>
-        <div className="fixed bg-white inset-0 w-screen h-screen overflow-y-auto p-4">
-          <Button onClick={closeSearch} className='z-50 absolute right-4 top-14'>
+        <div className="fixed bg-white inset-0 w-screen h-screen overflow-hidden">
+          <Button onClick={closeSearch} className='z-50 text-gray-500 hover:text-black absolute right-6 top-4'>
             <XMarkIcon className='size-5'/>
           </Button>
-          <DialogPanel className={'w-full pt-24'}>
-            {children}
-            <div className='mx-auto pb-24 max-w-7xl'>
-              <div className="mb-6 max-w-xl mx-auto">
-                <SearchQuery 
-                  key={rootQuery || 'empty-search'}
-                  className='bg-gray-50' 
-                  loading={isLoading} 
-                  handleSearch={(q) => handleSearch(q, true)}
-                  initQuery={rootQuery}
-                />
-              </div>
-
-              <ChatResults
-                loadingQuery={nlweb.loadingQuery}
-                streamingResults={nlweb.results}
-                streamingSummary={nlweb.summary || null}
-                streamingModifiedQuery={nlweb.decontextualizedQuery || null}
-                results={results}
-              />
-              <div className='fixed pointer-events-none bottom-0 top-[calc(100%_-_100px)] bg-gradient-to-b from-transparent to-white left-0 right-0'/>
-              <div className="fixed bottom-8 left-0 right-0">
-                <div className='max-w-xl mx-auto'>
-                  <SearchQuery 
-                    key={nlweb.loadingQuery}
-                    loading={isLoading} 
-                    handleSearch={(q) => handleSearch(q, false)}
-                    className='shadow-xl bg-white'
-                    placeholder="Enter a follow up query"
-                  />
+          <DialogPanel className={'w-full h-screen flex items-stretch overflow-hidden'}>
+            {sidebar}
+            <div className='flex-1 flex flex-col overflow-hidden'>
+              {children}
+              <div className='relative flex-1 overflow-hidden flex flex-col'>
+                <div className='flex-1 overflow-y-auto p-4 pt-16 pb-24'>
+                  <div className='max-w-7xl mx-auto'>
+                    <div className="mb-6 max-w-xl mx-auto">
+                      <SearchQuery 
+                        key={rootQuery || 'empty-search'}
+                        className='bg-gray-50' 
+                        loading={isLoading} 
+                        handleSearch={(q) => handleSearch(q, true)}
+                        initQuery={rootQuery}
+                      />
+                    </div>
+                    <ChatResults
+                      loadingQuery={nlweb.loadingQuery}
+                      streamingResults={nlweb.results}
+                      streamingSummary={nlweb.summary || null}
+                      streamingModifiedQuery={nlweb.decontextualizedQuery || null}
+                      results={results}
+                    />
+                  </div>
                 </div>
-              </div> 
+                <div className='absolute pointer-events-none bottom-0 top-[calc(100%_-_100px)] bg-gradient-to-b from-transparent to-white left-0 right-0'/>
+                <div className="absolute bottom-8 left-4 right-4">
+                  <div className='max-w-xl mx-auto'>
+                    <SearchQuery 
+                      key={nlweb.loadingQuery}
+                      loading={isLoading} 
+                      handleSearch={(q) => handleSearch(q, false)}
+                      className='shadow-xl bg-white'
+                      placeholder="Enter a follow up query"
+                    />
+                  </div>
+                </div> 
+              </div>
             </div>
           </DialogPanel>
         </div>
