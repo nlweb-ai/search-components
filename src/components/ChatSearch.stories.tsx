@@ -11,6 +11,7 @@ import {useNlWeb} from '../lib/useNlWeb';
 const SITES:Site[] = [
   {url: 'yoast-site-recipes.azurewebsites.net', featured: true},
   {url: 'yoast-site-rss.azurewebsites.net', featured: true},
+  {url: 'imdb.com', featured: true},
   {url: 'aajtak.in'}
 ]
 const PROD_ENDPOINT = "https://internal-testing.nlweb.ai/ask";
