@@ -1,5 +1,4 @@
 
-import {useState} from 'react';
 import { SearchResponse} from './useNlWeb';
 import useSWR, { mutate } from "swr";
 

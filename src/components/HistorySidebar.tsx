@@ -1,7 +1,7 @@
 
 import {SearchSession} from '../lib/useHistory';
 import { Button } from '@headlessui/react';
-import {XMarkIcon, GlobeAltIcon, PencilSquareIcon, Bars3Icon} from '@heroicons/react/24/solid'
+import {XMarkIcon, PencilSquareIcon, Bars3Icon} from '@heroicons/react/24/solid'
 import { Transition } from '@headlessui/react'
 import {useState} from 'react';
 import {clsx} from 'clsx';

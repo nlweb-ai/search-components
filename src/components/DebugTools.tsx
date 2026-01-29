@@ -1,9 +1,8 @@
 
 import {QueryResultSet} from '../lib/useHistory'
-import {BugAntIcon, XMarkIcon, MagnifyingGlassIcon} from '@heroicons/react/24/solid'
-import {useEffect,
-useState} from 'react';
-import {Dialog, DialogPanel, DialogTitle, Button, Tab, TabGroup, TabList, TabPanel, TabPanels} from '@headlessui/react';
+import {BugAntIcon} from '@heroicons/react/24/solid'
+import {useState} from 'react';
+import {Dialog, DialogPanel, Button, Tab, TabGroup, TabList, TabPanel, TabPanels} from '@headlessui/react';
 import {clsx} from 'clsx';
 import { NLWebSearchParams, NLWebSearchState, V054Request, convertParamsToRequest } from '../lib/useNlWeb';
 
