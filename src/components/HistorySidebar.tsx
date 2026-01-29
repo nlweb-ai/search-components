@@ -78,9 +78,9 @@ export function HistorySidebar({
             Search History
           </div>
 
-          <div className='p-2 divide-y'>
+          <div className='divide-y'>
             {Object.entries(groupedSessions).map(([site, siteSessions]) => (
-              <div key={site} className='mb-4'>
+              <div key={site} className='p-2'>
                 <SiteBadge site={site}/>
                 <div className='space-y-1'>
                   {siteSessions.map((session) => (

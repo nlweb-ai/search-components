@@ -1,10 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChatSearch } from './ChatSearch';
 import { HistorySidebar } from './HistorySidebar'
+import { DebugToolbar } from './DebugTools'
+import {SiteDropdown, type Site} from "./SiteDropdown"
 import {useState} from 'react';
-import {useSearchSessions, useSearchSession, QueryResultSet} from '../lib/useHistory';
+import {SearchSession,
+useSearchSessions, useSearchSession, QueryResultSet} from '../lib/useHistory';
+import {useNlWeb} from '../lib/useNlWeb';
 
-const PROD_ENDPOINT = "https://internal-testing.nlweb.ai/ask"
+const SITES:Site[] = [
+  {url: 'yoast-site-recipes.azurewebsites.net', featured: true},
+  {url: 'yoast-site-rss.azurewebsites.net', featured: true},
+  {url: 'aajtak.in'}
+]
+const PROD_ENDPOINT = "https://internal-testing.nlweb.ai/ask";
+const MAX_ITEMS = 50; 
+
 
 /**
  * ChatSearch provides an interactive conversational search experience with AI-powered summaries.
@@ -19,33 +30,12 @@ const PROD_ENDPOINT = "https://internal-testing.nlweb.ai/ask"
 const meta: Meta<typeof ChatSearch> = {
   title: 'Components/ChatSearch',
   component: ChatSearch,
+
   parameters: {
     layout: 'fullscreen',
   },
   tags: ['autodocs'],
-  argTypes: {
-    endpoint: {
-      control: 'select',
-      description: 'The API endpoint URL for the NLWeb search service. This endpoint handles search queries and returns AI-generated summaries with results.',
-      options: [
-        PROD_ENDPOINT,
-      ],
-    },
-    site: {
-      control: 'select',
-      description: 'The target site domain to search within. The search will be scoped to content from this specific site.',
-      options: [
-        'yoast-site-recipes.azurewebsites.net',
-        'yoast-site-rss.azurewebsites.net',
-        'ambitiouskitchen.com',
-      ],
-      table: {
-        type: { summary: 'string' },
-        defaultValue: { summary: 'yoast-site-recipes.azurewebsites.net' },
-      },
-    },
-  },
-};
+}
 
 export default meta;
 type Story = StoryObj<typeof ChatSearch>;
@@ -60,35 +50,29 @@ type Story = StoryObj<typeof ChatSearch>;
  * 4. Ask follow-up questions using the bottom search bar
  */
 export const Default: Story = {
-  args: {
-    endpoint: PROD_ENDPOINT,
-    site: 'yoast-site-recipes.azurewebsites.net',
-  },
   render: (args) => {
-    const [results, setResults] = useState<QueryResultSet[]>([])
+    const [results, setResults] = useState<QueryResultSet[]>([]);
+    const [site, setSite] = useState<Site>(SITES[0]);
+    const nlweb = useNlWeb({
+      endpoint: PROD_ENDPOINT,
+      site: site.url,
+      maxResults: MAX_ITEMS
+    });
     return (
       <div className="p-8 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">NLWeb Chat Search Playground</h1>
-        <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Searching:</span>
-            <span className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
-              {args.site}
-            </span>
-          </div>
-        </div>
-        <ChatSearch 
-          results={results} 
-          setResults={setResults} 
-          site={args.site}
-          endpoint={args.endpoint}
+        <h1 className="text-2xl font-bold mb-4">Recipe Search</h1>
+        <ChatSearch
+          results={results}
+          setResults={setResults}
+          nlweb={nlweb}
         />
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> This example is driven by the endpoint and site parameters,
-            available in the controls section.
-          </p>
-        </div>
+        <SiteDropdown 
+          sites={SITES} 
+          selected={site} 
+          onSelect={url => setSite(SITES.find(s => s.url == url) || ({
+            url: url || ''
+          }))}
+        />
       </div>
     )
   }
@@ -106,39 +90,42 @@ export const Default: Story = {
  * 4. Ask follow-up questions using the bottom search bar
  */
 export const WithDebugTools: Story = {
-  args: {
-    endpoint: PROD_ENDPOINT,
-    site: 'yoast-site-recipes.azurewebsites.net',
-  },
   render: (args) => {
     const [results, setResults] = useState<QueryResultSet[]>([])
+    const [site, setSite] = useState<Site>(SITES[0]);
+    const nlweb = useNlWeb({
+      endpoint: PROD_ENDPOINT,
+      site: site.url,
+      maxResults: MAX_ITEMS
+    });
     return (
       <div className="p-8 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">NLWeb Debugger</h1>
+        <h1 className="text-2xl font-bold mb-4">Recipe Search + Debugger</h1>
         <div className='text-sm mb-3 text-gray-500'>
           Use the debugger to see raw backend responses, and data that is dropped.
         </div>
-        <div className="mb-6 space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Searching:</span>
-            <span className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
-              {args.site}
-            </span>
+        <ChatSearch
+          results={results}
+          setResults={setResults}
+          nlweb={nlweb}
+        >
+          <div className='fixed left-4 top-12 z-50'>
+            <DebugToolbar
+              key="debug-toolbar"
+              site={site.url}
+              maxResults={50}
+              streamingState={nlweb}
+              results={results}
+            />
           </div>
-        </div>
-        <ChatSearch 
-          results={results} 
-          setResults={setResults} 
-          site={args.site}
-          endpoint={args.endpoint}
-          debug={true}
+        </ChatSearch>
+        <SiteDropdown 
+          sites={SITES} 
+          selected={site} 
+          onSelect={url => setSite(SITES.find(s => s.url == url) || ({
+            url: url || ''
+          }))}
         />
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> This example is driven by the endpoint and site parameters,
-            available in the controls section.
-          </p>
-        </div>
       </div>
     )
   }
@@ -156,63 +143,61 @@ export const WithDebugTools: Story = {
  * 4. Ask follow-up questions using the bottom search bar
  */
 export const WithSearchHistory: Story = {
-  args: {
-    endpoint: PROD_ENDPOINT,
-    site: 'yoast-site-recipes.azurewebsites.net',
-    debug: true,
-  },
   render: (args) => {
+    const [site, setSite] = useState<Site>(SITES[0]);
+    const nlweb = useNlWeb({
+      endpoint: PROD_ENDPOINT,
+      site: site.url,
+      maxResults: MAX_ITEMS
+    });
     const localSessions = useSearchSessions();
     const [sessionId, setSessionId] = useState<string>(crypto.randomUUID());
     const [sessionResults, setSessionResults] = useSearchSession(sessionId);
     function startSearch(firstResult: QueryResultSet) {
       const newId = localSessions.sessions.some(s => s.sessionId === sessionId) ? crypto.randomUUID() : sessionId ;
       localSessions.startSession(newId, firstResult, {
-        site: args.site,
-        endpoint: args.endpoint
+        site: site.url,
+        endpoint: PROD_ENDPOINT
       })
       setSessionId(sessionId);
     }
     function endSearch() {
       setSessionId(crypto.randomUUID());
     }
+    function selectSession(session: SearchSession) {
+      setSessionId(session.sessionId);
+      setSite(SITES.find(s => s.url == session.backend.site) || {
+        url: session.backend.site
+      });
+    }
     return (
       <div className="flex items-stretch h-full">
-        <HistorySidebar 
+        <HistorySidebar
           sessions={localSessions.sessions}
-          onSelect={(session) => setSessionId(session.sessionId)}
+          onSelect={selectSession}
           onDelete={localSessions.deleteSession}
         />
         <div className='p-8 flex-1'>
           <div className='max-w-3xl mx-auto'>
-            <ChatSearch 
+            <ChatSearch
               key={sessionId}
               startSession={startSearch}
               endSession={endSearch}
-              results={sessionResults} 
-              setResults={setSessionResults} 
-              site={args.site}
-              endpoint={args.endpoint}
-              debug={args.debug}
+              results={sessionResults}
+              setResults={setSessionResults}
+              nlweb={nlweb}
             />
-            <div className="mb-6 flex gap-3 items-center">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600">Searching:</span>
-                <span className="px-3 py-1 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
-                  {args.site}
-                </span>
-              </div>
-            </div>
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> This example is driven by the endpoint and site parameters,
-                available in the controls section.
-              </p>
-            </div>
+            <SiteDropdown 
+              sites={SITES} 
+              selected={site} 
+              onSelect={url => setSite(SITES.find(s => s.url == url) || ({
+                url: url || ''
+              }))}
+            />
           </div>
         </div>
       </div>
     )
   }
-};
+} satisfies Story;
 

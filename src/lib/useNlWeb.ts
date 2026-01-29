@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Microsoft Corporation.
 // Licensed under the MIT License
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Thing } from 'schema-dts';
 import {NlwebResult, parseSchema} from './parseSchema';
 
@@ -21,12 +21,16 @@ export interface NLWebSearchState {
     results: NlwebResult[];
     summary?: string;
     decontextualizedQuery?: string;
-    isLoading: boolean;
+    loadingQuery: string | null;
     error: string | null;
     rawLogs?: object[]
 }
 
-
+export interface NLWeb extends NLWebSearchState {
+    search : (params: NLWebSearchParams) => Promise<SearchResponse>;
+    cancelSearch : () => void;
+    clearResults: () => void;
+}
 /**
  * Search request parameters
  */
@@ -129,13 +133,13 @@ export function convertParamsToRequest(params: NLWebSearchParams, site: string, 
  * @param config - Hook configuration including endpoint URL
  * @returns Search state and search function
  */
-export function useNlWeb(config: UseNlWebConfig) {
+export function useNlWeb(config: UseNlWebConfig):NLWeb {
     const { endpoint, site, maxResults = 50 } = config;
 
     
     const [state, setState] = useState<NLWebSearchState>({
         results: [],
-        isLoading: false,
+        loadingQuery: null,
         error: null,
         rawLogs: []
     });
@@ -288,7 +292,7 @@ export function useNlWeb(config: UseNlWebConfig) {
         // Reset state
         setState({
             results: [],
-            isLoading: true,
+            loadingQuery: params.query,
             error: null,
             rawLogs: []
         });
@@ -318,7 +322,7 @@ export function useNlWeb(config: UseNlWebConfig) {
             setState({
                 results: results.results,
                 summary: results.summary,
-                isLoading: false,
+                loadingQuery: null,
                 error: null,
                 rawLogs: results.rawLogs
             });
@@ -330,7 +334,7 @@ export function useNlWeb(config: UseNlWebConfig) {
                 const errorMessage = error.message || 'An error occurred during search';
                 setState({
                     results: [],
-                    isLoading: false,
+                    loadingQuery: null,
                     error: errorMessage,
                     rawLogs:[]
                 });
@@ -355,7 +359,7 @@ export function useNlWeb(config: UseNlWebConfig) {
 
             setState(prev => ({
                 ...prev,
-                isLoading: false,
+                loadingQuery: null,
             }));
         }
     }, []);
@@ -366,10 +370,14 @@ export function useNlWeb(config: UseNlWebConfig) {
     const clearResults = useCallback(() => {
         setState({
             results: [],
-            isLoading: false,
+            loadingQuery: null,
             error: null,
         });
     }, []);
+
+    useEffect(() => {
+        clearResults()
+    }, [site])
 
     return {
         ...state,
