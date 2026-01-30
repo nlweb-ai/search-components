@@ -224,7 +224,7 @@ function Thumbnail({ srcs, className, ...rest }: { srcs: string[]; } & ImgHTMLAt
       <img
         src={srcs[srcIndex]}
         className={clsx(
-          "w-full h-full object-cover rounded",
+          "w-full! h-full! object-cover! rounded!",
           srcsExhausted && 'invisible',
         )}
         {...rest}
