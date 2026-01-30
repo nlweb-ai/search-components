@@ -60,7 +60,7 @@ function SearchQuery({initQuery, className, loading, handleSearch, placeholder="
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           disabled={loading}
-          className="flex-1 rounded-md text-base px-4 pl-10 py-3 text-gray-900 placeholder-gray-400 outline-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1! rounded-md! text-base! px-4! pl-10! py-3! text-gray-900 placeholder-gray-400 outline-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <Button
           type="submit"
@@ -343,8 +343,8 @@ export function ChatSearch({
   nlweb, children, sidebar,
 } : {
   results: QueryResultSet[], 
-  setResults: (r: QueryResultSet[]) => void; 
-  startSession?: (r: QueryResultSet) => void;
+  setResults: (r: QueryResultSet[], sessionId?: string) => void; 
+  startSession?: (query: string) => string;
   endSession?: () => void;
   nlweb: NLWeb; children?: ReactNode
   sidebar?: ReactNode
@@ -357,9 +357,13 @@ export function ChatSearch({
     }
   }
   async function handleSearch(query: string, isRoot: boolean) {
-    setSearchOpen(true);
     let response: SearchResponse;
+    let sessionId:string|null = null;
     if (isRoot) {
+      if (startSession) {
+        sessionId = startSession(query);
+      }
+      setSearchOpen(true);
       response = await nlweb.search({
         query: query
       })
@@ -369,14 +373,15 @@ export function ChatSearch({
         conversationHistory: results.map(r => r.query)
       })
     }
+    // Remove the from result stream
     nlweb.clearResults();
+    // Add to store, in the correct way
     if (isRoot) {
-      if (startSession) {
-        // Start a new session with the results
-        startSession({query: query, response: response})
+      const initResults = [{query: query, response: response}];
+      if (sessionId) {
+        setResults(initResults, sessionId);
       } else {
-        // Just reset as the first result
-        setResults([{query: query, response: response}])
+        setResults(initResults);
       }
     } else {
       setResults([...results, {query: query, response: response}])

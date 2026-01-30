@@ -62,13 +62,11 @@ export interface SearchSession {
   sessionId: string;
   backend:Backend
 }
-export function useSearchSessions(): {sessions: SearchSession[]; startSession: (sessionId: string, initResult: QueryResultSet, backend: Backend) => void; deleteSession: (sessionId: string) => void} {
+export function useSearchSessions(): {sessions: SearchSession[]; startSession: (sessionId: string, query: string, backend: Backend) => void; deleteSession: (sessionId: string) => void} {
   const [sessions, setSessions] = useStorageSWR<SearchSession[]>("/sessions", []);
-  function startSession(sessionId: string, initResult: QueryResultSet, backend: Backend) {
+  function startSession(sessionId: string, query: string, backend: Backend) {
     // Save the item to to the session
-    localStorage.setItem(`/session/${sessionId}`, JSON.stringify([initResult]));
-    setSessions([...sessions, {sessionId: sessionId, query: initResult.query, backend: backend}])
-    mutate(`/session/${sessionId}`, [initResult]);
+    setSessions([...sessions, {sessionId: sessionId, query: query, backend: backend}])
   }
   function deleteSession(sessionId: string) {
     setSessions(sessions.filter(s => s.sessionId != sessionId));
@@ -83,7 +81,15 @@ export function useSearchSessions(): {sessions: SearchSession[]; startSession: (
   }
 }
 
-export function useSearchSession(sessionId: string | null):[QueryResultSet[], (data: QueryResultSet[]) => void] {
+export function useSearchSession(sessionId: string | null):[QueryResultSet[], (data: QueryResultSet[], sessionId?: string) => void] {
   const [queryResults, setQueryResults] = useStorageSWR<QueryResultSet[]>(sessionId ? `/session/${sessionId}` : null, []);
-  return [queryResults, setQueryResults]
+  function setResultsOnSession(results: QueryResultSet[], sessionId?: string) {
+    if (sessionId) {
+      localStorage.setItem(`/session/${sessionId}`, JSON.stringify(results));
+      mutate(`/session/${sessionId}`, results);
+    } else {
+      setQueryResults(results);
+    }
+  }
+  return [queryResults, setResultsOnSession]
 }
