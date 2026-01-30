@@ -60,7 +60,7 @@ function SearchQuery({initQuery, className, loading, handleSearch, placeholder="
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           disabled={loading}
-          className="flex-1! rounded-md! text-base! px-4! pl-10! py-3! text-gray-900 placeholder-gray-400 outline-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1! m-0! rounded-md! text-base! px-4! pl-10! py-3! text-gray-900 placeholder-gray-400 outline-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <Button
           type="submit"

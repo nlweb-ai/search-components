@@ -7,4 +7,4 @@ export { SiteDropdown } from './components/SiteDropdown';
 export type {Site} from './components/SiteDropdown'
 export {useNlWeb } from './lib/useNlWeb'
 export {useSearchSession, useSearchSessions} from './lib/useHistory'
-export type {QueryResultSet} from './lib/useHistory'
+export type {QueryResultSet, SearchSession} from './lib/useHistory'
