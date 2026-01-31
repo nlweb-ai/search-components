@@ -271,7 +271,6 @@ function SearchingFor({query, streaming} : {query?: string | null; streaming?: b
 
 function AssistantMessage({summary, results, loading} : {summary?: string | null; results: NlwebResult[]; loading?: boolean}) {
   const skeletonCount = Math.max(0, 3 - results.length);
-
   return (
     <div className="flex justify-start mb-6">
       <div className="max-w-3xl flex-1 bg-gray-50 p-6 rounded-lg">
