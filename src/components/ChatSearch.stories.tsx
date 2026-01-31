@@ -15,7 +15,7 @@ const SITES:Site[] = [
   {url: 'aajtak.in'}
 ]
 const PROD_ENDPOINT = "https://internal-testing.nlweb.ai/ask";
-const MAX_ITEMS = 50; 
+const MAX_ITEMS = 10; 
 
 
 /**
@@ -113,7 +113,7 @@ export const WithDebugTools: Story = {
           <div className='fixed left-4 top-12 z-50'>
             <DebugTool
               site={site.url}
-              maxResults={50}
+              maxResults={MAX_ITEMS}
               streamingState={nlweb}
               results={results}
             />

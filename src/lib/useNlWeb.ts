@@ -134,7 +134,7 @@ export function convertParamsToRequest(params: NLWebSearchParams, site: string, 
  * @returns Search state and search function
  */
 export function useNlWeb(config: UseNlWebConfig):NLWeb {
-    const { endpoint, site, maxResults = 50 } = config;
+    const { endpoint, site, maxResults = 9 } = config;
 
     
     const [state, setState] = useState<NLWebSearchState>({
