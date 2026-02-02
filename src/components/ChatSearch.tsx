@@ -215,7 +215,7 @@ function QueryMessage({query} : {query: string}) {
     <div className="flex justify-end mb-6">
       <div className="max-w-2xl">
         <div className="bg-gray-900 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
-          <p className="text-sm leading-relaxed">{query}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-line">{query}</p>
         </div>
       </div>
     </div>
