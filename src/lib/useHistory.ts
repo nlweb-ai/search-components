@@ -65,9 +65,15 @@ export interface SearchSession {
 export function useSearchSessions(): {sessions: SearchSession[]; startSession: (sessionId: string, query: string, backend: Backend) => void; deleteSession: (sessionId: string) => void} {
   const [sessions, setSessions] = useStorageSWR<SearchSession[]>("/sessions", []);
   function startSession(sessionId: string, query: string, backend: Backend) {
-    // Save the item to to the session
-    setSessions([...sessions, {sessionId: sessionId, query: query, backend: backend}])
-  }
+    // Find a session with the same query. If one exists, delete it. 
+    const duplicates = sessions.filter(s => s.query == query);
+    duplicates.forEach(s => {
+      localStorage.removeItem(`/session/${s.sessionId}`);
+      mutate<QueryResultSet[]>(`/session/${s.sessionId}`, []);
+    })
+    const uniqueSessions = sessions.filter(s => s.query != query);
+    setSessions([...uniqueSessions, {sessionId: sessionId, query: query, backend: backend}])
+  } 
   function deleteSession(sessionId: string) {
     setSessions(sessions.filter(s => s.sessionId != sessionId));
     localStorage.removeItem(`/session/${sessionId}`);

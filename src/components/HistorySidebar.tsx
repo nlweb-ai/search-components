@@ -49,7 +49,7 @@ export function HistorySidebar({
   onDelete: (sessionId: string) => void;
   onCreate: () => void;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(sessions.length > 1);
   // Group sessions by site
   const groupedSessions: GroupedSessions = sessions.reduce((acc, session) => {
     const site = session.backend.site;
@@ -59,7 +59,6 @@ export function HistorySidebar({
     acc[site].push(session);
     return acc;
   }, {} as GroupedSessions);
-  console.log(isOpen);
   return (
     <div className={clsx('flex-1 flex flex-col  relative z-50 transition-all', isOpen ? 'max-w-80' : 'max-w-12')}>
         <div className='flex flex-col flex-1 overflow-hidden'>

@@ -177,7 +177,7 @@ function SummaryCard({summary} : {summary? : string | null}) {
 }
 function SimpleSkeleton() {
   return (
-    <div className="h-2 bg-gray-100 w-full animate-pulse rounded-md max-w-48"></div>
+    <div className="h-2 bg-gray-100 animate-pulse rounded-md max-w-48"></div>
   )
 }
 
@@ -190,22 +190,19 @@ function SearchingFor({query, streaming} : {query?: string | null; streaming?: b
 }
 
 function AssistantMessage({summary, results, loading} : {summary?: string | null; results: NlwebResult[]; loading?: boolean}) {
-  const skeletonCount = Math.max(0, 6 - results.length);
-
+  const skeletonCount = Math.max(0, 3 - results.length);
   return (
     <div className="flex justify-start mb-6">
-      <div className='bg-gray-50 p-6 rounded-lg w-full'>
-        <div className="max-w-3xl w-full">
-          <div className="space-y-4">
-            <SummaryCard summary={summary}/>
-            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
-              {results.map((r, idx) =>
-                <ResultCard result={r} key={(r.url || r.name || idx) as string}/>
-              )}
-              {loading && Array.from({ length: skeletonCount }).map((_, idx) =>
-                 <ResultCardSkeleton key={`skeleton-${idx}`}/>
-              )}
-            </div>
+      <div className="max-w-3xl flex-1 bg-gray-50 p-6 rounded-lg">
+        <div className="space-y-4">
+          <SummaryCard summary={summary}/>
+          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
+            {results.map((r, idx) =>
+              <ResultCard result={r} key={(r.url || r.name || idx) as string}/>
+            )}
+            {loading && Array.from({ length: skeletonCount }).map((_, idx) =>
+                <ResultCardSkeleton key={`skeleton-${idx}`}/>
+            )}
           </div>
         </div>
       </div>
@@ -237,7 +234,7 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
               summary={r.response.summary} 
               results={r.response.results}
             /> : 
-            <div className='flex max-w-2xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
+            <div className='flex max-w-3xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
               No results found
             </div>
           }
@@ -281,7 +278,11 @@ export function ChatSearch({
     let sessionId:string|null = null;
     if (isRoot) {
       if (startSession) {
+        // Start a new session, if supported
         sessionId = startSession(query);
+      } else {
+        // Wipe the results 
+        setResults([]);
       }
       setSearchOpen(true);
       response = await nlweb.search({
