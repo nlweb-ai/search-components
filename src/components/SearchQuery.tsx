@@ -149,7 +149,7 @@ function EditorStatePlugin({
   return null;
 }
 
-export function SearchQuery({initQuery, className, loading, handleSearch, placeholder="Ask anything..."} : {initQuery?: string | null; className?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
+export function SearchQuery({initQuery, className, inputClassName, loading, handleSearch, placeholder="Ask anything..."} : {initQuery?: string | null; className?: string; inputClassName?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
   const [isFocused, setIsFocused] = useState(false);
   const [isMultiline, setIsMultiline] = useState(false);
   const [hasText, setHasText] = useState(!!initQuery);
@@ -217,6 +217,7 @@ export function SearchQuery({initQuery, className, loading, handleSearch, placeh
                 className={clsx(
                   "outline-none flex-1 m-0 rounded-md text-base px-4 py-3 text-gray-900",
                   isMultiline ? "pl-4" : "pl-10",
+                  inputClassName,
                   loading && "opacity-50 cursor-not-allowed"
                 )}
                 aria-placeholder={placeholder}

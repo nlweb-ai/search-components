@@ -352,6 +352,7 @@ export function ChatSearch({
                       key={nlweb.loadingQuery}
                       loading={isLoading} 
                       handleSearch={(q) => handleSearch(q, false)}
+                      inputClassName="max-h-[60vh] overflow-y-auto"
                       className='shadow-xl bg-white'
                       placeholder="Enter a follow up query"
                     />
