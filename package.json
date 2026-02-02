@@ -78,7 +78,9 @@
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
+    "@lexical/react": "^0.40.0",
     "clsx": "^2.1.1",
+    "lexical": "^0.40.0",
     "schema-dts": "^1.1.5",
     "swr": "^2.3.8",
     "zod": "^4.3.6"
