@@ -1,7 +1,7 @@
-import { ReactNode, useState, ImgHTMLAttributes } from 'react';
+import React, { ReactNode, useState, ImgHTMLAttributes } from 'react';
 import { NLWeb, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
-import { XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
+import { XMarkIcon, NewspaperIcon, Square2StackIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
 import { getThumbnailCandidates, isMovieResult, NlwebResult } from '../lib/parseSchema';
 import { shortQuantity, intersperse } from '../lib/util';
@@ -189,12 +189,53 @@ function SearchingFor({query, streaming} : {query?: string | null; streaming?: b
   )
 }
 
+
+function ActionButton({children, onClick} : {children: ReactNode; onClick?: () => void}) {
+  return (
+    <Button
+      onClick={onClick}
+      className="p-2 rounded-md transition-colors duration-200 text-gray-500 hover:bg-gray-100 flex items-center justify-center"
+    >
+      <div className="size-4">
+        {children}
+      </div>
+    </Button>
+  )
+}
+
+function AssistantMessageActions({content, onViewMore} : {content: string; onViewMore: () => void}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  return (
+    <div className='flex items-center'>
+      <ActionButton onClick={handleCopy}>
+        {copied ? <CheckIcon className="text-green-600" /> : <Square2StackIcon/>}
+      </ActionButton>
+      <ActionButton onClick={onViewMore}>
+        <ArrowPathIcon/>
+      </ActionButton>
+    </div>
+  )
+}
+
 function AssistantMessage({summary, results, loading} : {summary?: string | null; results: NlwebResult[]; loading?: boolean}) {
   const skeletonCount = Math.max(0, 3 - results.length);
   return (
-    <div className="flex justify-start mb-6">
+    <div className="flex justify-start">
       <div className="max-w-3xl flex-1 bg-gray-50 p-6 rounded-lg">
-        <div className="space-y-4">
+        <div className="space-y-4 mb-2">
           <SummaryCard summary={summary}/>
           <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
             {results.map((r, idx) =>
@@ -238,6 +279,14 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
               No results found
             </div>
           }
+          <div className='mt-2 mb-6'>
+             <AssistantMessageActions 
+                content={r.response.summary || ''}
+                onViewMore={() => {
+                  console.log('Requesting to view more!');
+                }}
+              />
+          </div>
         </div>
       )}
       {loadingQuery && (
