@@ -1,5 +1,5 @@
 import React, { ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
-import { NLWeb, SearchResponse} from '../lib/useNlWeb';
+import { NLWeb, NLWebSearchState, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { XMarkIcon, NewspaperIcon, Square2StackIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
@@ -265,7 +265,7 @@ function QueryMessage({query} : {query: string}) {
 
 
 function ChatEntry({index, query, loading, decontextualizedQuery, summary, results} : {
-  index: number; query: string; loading: boolean; decontextualizedQuery?: string; summary?: string; results: NlwebResult[]
+  index: number; query: string; loading: boolean; decontextualizedQuery?: string | null; summary?: string | null; results: NlwebResult[]
 }) {
   return (
      <div key={`${query}-${index}`}>
@@ -295,59 +295,31 @@ function ChatEntry({index, query, loading, decontextualizedQuery, summary, resul
   )
 }
 
-function ChatResults({streaming, streamingIndex, loadingQuery, streamingModifiedQuery, streamingSummary, streamingResults, results} : {streaming: boolean; streamingIndex: number; loadingQuery: string | null; streamingModifiedQuery: string | null; streamingSummary?: string | null; streamingResults: NlwebResult[]; results: QueryResultSet[]}) {
-  console.log(streaming, streamingIndex, loadingQuery, results.length)
-  console.log(results);
+function ChatResults({nlweb, results} : {nlweb: NLWebSearchState; results: QueryResultSet[]}) {
   return (
     <div className="space-y-4 py-6">
       {results.map((r, idx) =>
-        idx != streamingIndex && <div key={`${r.query}-${idx}`}>
-          {idx > 0 ? <QueryMessage query={r.query}/> : null}
-          {idx > 0 ? <SearchingFor query={r.response.decontextualizedQuery}/> : null}
-          {r.response.results.length > 0 ?
-            <AssistantMessage 
-              summary={r.response.summary} 
-              results={r.response.results}
-            /> : 
-            <div className='flex max-w-3xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
-              No results found
-            </div>
-          }
-          <div className='mt-2 mb-6'>
-             <AssistantMessageActions 
-                content={r.response.summary || ''}
-                onViewMore={() => {
-                  console.log('Requesting to view more!');
-                }}
-              />
-          </div>
-        </div>
+        idx != nlweb.streamingIndex && 
+          <ChatEntry
+            key={`${r.query}-${idx}`}
+            loading={false}
+            index={idx}
+            query={r.query}
+            results={r.response.results}
+            summary={r.response.summary}
+            decontextualizedQuery={r.response.decontextualizedQuery}
+          />
       )}
-      {loadingQuery && (
-        <div key={`${loadingQuery}-${streamingIndex}`}>
-          {streamingIndex > 0 ? <QueryMessage query={loadingQuery}/> : null}
-          {streamingIndex > 0 && streamingResults.length > 0 ? <SearchingFor streaming={streaming} query={streamingModifiedQuery}/> : null}
-          {(streamingResults.length > 0 || streaming) ?
-            <AssistantMessage
-              summary={streamingSummary}
-              results={streamingResults}
-              loading={streaming}
-            /> :
-            <div className='flex max-w-3xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
-              No results found
-            </div>
-          }
-          {!streaming && 
-            <div className='mt-2 mb-6'>
-              <AssistantMessageActions 
-                content={streamingSummary || ''}
-                onViewMore={() => {
-                  console.log('Requesting to view more!');
-                }}
-              />
-            </div>
-          }
-        </div>
+      {nlweb.query && (
+        <ChatEntry
+          key={`${nlweb.query}-${nlweb.streamingIndex}`}
+          index={nlweb.streamingIndex}
+          query={nlweb.query}
+          results={nlweb.results}
+          summary={nlweb.summary}
+          decontextualizedQuery={nlweb.decontextualizedQuery}
+          loading={nlweb.loading}
+        />
       )}
     </div>
   )
@@ -427,12 +399,7 @@ export function ChatSearch({
                       />
                     </div>
                     <ChatResults
-                      streaming={nlweb.loading}
-                      streamingIndex={nlweb.streamingIndex}
-                      loadingQuery={nlweb.query}
-                      streamingResults={nlweb.results}
-                      streamingSummary={nlweb.summary || null}
-                      streamingModifiedQuery={nlweb.decontextualizedQuery || null}
+                      nlweb={nlweb}
                       results={results}
                     />
                   </div>
