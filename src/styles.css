@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import "tw-shimmer";
 
 /*
   The default border color has changed to `currentcolor` in Tailwind CSS v4,
@@ -17,3 +18,5 @@
     border-color: var(--color-gray-200, currentcolor);
   }
 }
+
+

@@ -60,7 +60,7 @@ export function HistorySidebar({
     return acc;
   }, {} as GroupedSessions);
   return (
-    <div className={clsx('flex-1 flex flex-col  relative z-50 transition-all', isOpen ? 'max-w-80' : 'max-w-12')}>
+    <div className={clsx('flex-1 flex flex-col  relative z-50 transition-all', isOpen ? 'max-w-70' : 'max-w-12')}>
         <div className='flex flex-col flex-1 overflow-hidden'>
             <div className={
               clsx('absolute right-2 top-0 h-12 flex items-center', !isOpen ? 'left-2 flex justify-center' : '')

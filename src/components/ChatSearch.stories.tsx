@@ -158,6 +158,7 @@ export const WithSearchHistory: Story = {
     const [sessionId, setSessionId] = useState<string>(crypto.randomUUID());
     const [sessionResults, addResult] = useSearchSession(sessionId);
     async function startSearch(query: string) {
+      nlweb.clearResults();
       const newId = localSessions.sessions.some(s => s.sessionId === sessionId) ? crypto.randomUUID() : sessionId ;
       await localSessions.startSession(newId, query, {
         site: site.url,
@@ -168,8 +169,12 @@ export const WithSearchHistory: Story = {
     }
     function endSearch() {
       setSessionId(crypto.randomUUID());
+      nlweb.clearResults();
+      nlweb.cancelSearch();
     }
     function selectSession(session: SearchSession) {
+      nlweb.clearResults();
+      nlweb.cancelSearch();
       setSessionId(session.sessionId);
       setSite(SITES.find(s => s.url == session.backend.site) || {
         url: session.backend.site

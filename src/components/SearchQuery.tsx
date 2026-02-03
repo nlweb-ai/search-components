@@ -203,7 +203,7 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
         )}
       >
         <div className={clsx(
-          'absolute left-3 pointer-events-none z-10',
+          'absolute left-3.5 pointer-events-none z-10',
           isMultiline ? 'hidden' : ''
         )}>
           <MagnifyingGlassIcon className='size-4 text-gray-400'/>
@@ -220,7 +220,8 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
                 )}
                 aria-placeholder={placeholder}
                 placeholder={
-                  <div className={clsx("absolute top-3 text-base text-gray-400 pointer-events-none select-none",                    isMultiline ? "left-3" : "left-10"
+                  <div className={clsx("absolute top-3 text-base text-gray-400 pointer-events-none select-none",
+                    isMultiline ? "left-4" : "left-10"
 
                   )}>
                     {placeholder}

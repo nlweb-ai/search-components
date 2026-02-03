@@ -23,17 +23,17 @@ function decodeHtmlEntities(text: string): string {
 
 function ResultCardSkeleton() {
   return (
-    <div className="block w-full transition-all duration-200 overflow-hidden animate-pulse">
+    <div className="block w-full transition-all overflow-hidden shimmer-container">
       <div className="flex flex-col gap-3">
-        <div className="h-36 w-full bg-gray-200 rounded"></div>
-        <div className="flex-1 min-w-0">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-36 w-full shimmer shimmer-bg shimmer-color-gray-300/30 [--shimmer-x:60] [--shimmer-y:0] bg-gray-100 rounded"></div>
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-4  bg-gray-100 rounded w-3/4"></div>
           <div className="space-y-1">
-            <div className="h-3 bg-gray-200 rounded w-full"></div>
-            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+            <div className="h-3 bg-gray-100 rounded w-full"></div>
+            <div className="h-3 bg-gray-100 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-100 rounded w-5/6"></div>
           </div>
+          <div className="h-2  bg-gray-100 rounded w-1/6"></div>
         </div>
       </div>
     </div>
@@ -156,6 +156,17 @@ function Thumbnail({ srcs, className, ...rest }: { srcs: string[]; } & ImgHTMLAt
   );
 }
 
+function SummarySkeleton() {
+  return (
+     <div className="space-y-3 w-full md:min-w-md shimmer-container">
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:0] bg-gray-200 rounded-md w-full"></div>
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:20] bg-gray-200 rounded-md w-11/12"></div>
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:40] bg-gray-200 rounded-md w-full"></div>
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:60] bg-gray-200 rounded-md w-10/12"></div>
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:80] bg-gray-200 rounded-md w-full"></div>
+    </div>
+  )
+}
 function SummaryCard({summary} : {summary? : string | null}) {
   if (summary) {
     return (
@@ -167,25 +178,14 @@ function SummaryCard({summary} : {summary? : string | null}) {
 
   // Skeleton loader with pulsing animation
   return (
-    <div className="space-y-3 w-full min-w-md animate-pulse">
-      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-11/12"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-10/12"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
-    </div>
-  )
-}
-function SimpleSkeleton() {
-  return (
-    <div className="h-2 bg-gray-100 animate-pulse rounded-md max-w-48"></div>
+    <SummarySkeleton/>
   )
 }
 
 function SearchingFor({query, streaming} : {query?: string | null; streaming?: boolean}) {
   return (
-    <div className='text-gray-500 gap-1 flex items-center text-sm pb-2 px-2'>
-      {streaming ? "Searching:" : "Searched:"} {query ? <span className='text-gray-800 overflow-ellipse'>{query}</span> : <SimpleSkeleton/>}
+    <div className={clsx('text-gray-500 gap-1 flex items-center text-sm pb-2 px-2', streaming && 'shimmer')}>
+    {query ? <span className='text-gray-800 overflow-ellipse'>Searching for: {query}</span> : "Working on it"}
     </div>
   )
 }
@@ -271,14 +271,14 @@ function ChatEntry({index, query, loading, decontextualizedQuery, summary, resul
   return (
      <div key={`${query}-${index}`}>
       {index > 0 ? <QueryMessage query={query}/> : null}
-      {index > 0 && results.length > 0 ? <SearchingFor streaming={loading} query={decontextualizedQuery}/> : null}
+      {index > 0 ? <SearchingFor streaming={loading} query={decontextualizedQuery}/> : null}
       {(results.length > 0 || loading) ?
         <AssistantMessage
           summary={summary}
           results={results}
           loading={loading}
         /> :
-        <div className='flex max-w-3xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
+        <div className='flex max-w-3xl text-base text-gray-500 justify-start bg-gray-50 p-6 rounded-lg'>
           No results found
         </div>
       }
@@ -376,8 +376,8 @@ export function ChatSearch({
   const rootQuery = results.length > 0 ? results[0].query : nlweb.query;
   return (
     <div>
-      <div className="mb-6">
-        <SearchQuery loading={!!nlweb.query} handleSearch={(q) => handleSearch(q, true)}/>
+      <div className="mb-6 h-12 relative z-30">
+        <SearchQuery loading={nlweb.loading} handleSearch={(q) => handleSearch(q, true)}/>
       </div>
       <Dialog className={'relative z-50'} open={searchOpen} onClose={closeSearch}>
         <div className="fixed bg-white inset-0 w-screen h-screen overflow-hidden">
