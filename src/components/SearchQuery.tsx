@@ -127,7 +127,6 @@ function EditorStatePlugin({
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const currentHeight = entry.contentRect.height;
-        console.log(currentHeight, initialHeightRef.current);
         // Only set to true when height increases (text wraps)
         if (initialHeightRef.current !== null && currentHeight >= initialHeightRef.current) {
           if (!isMultilineRef.current) {
@@ -192,7 +191,6 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
     setIsMultiline(isMultiline);
   }, []);
 
-  console.log('sskdjfakl')
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <div

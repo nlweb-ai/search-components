@@ -64,7 +64,9 @@ export const Default: Story = {
         <h1 className="text-2xl font-bold mb-4">Recipe Search</h1>
         <ChatSearch
           results={results}
-          setResults={setResults}
+          startSession={() => setResults([])}
+          endSession={() => setResults([])}
+          addResult={r => setResults(curr => [...curr, r])}
           nlweb={nlweb}
         />
         <SiteDropdown 
@@ -106,8 +108,10 @@ export const WithDebugTools: Story = {
           Use the debugger to see raw backend responses, and data that is dropped.
         </div>
         <ChatSearch
+          startSession={() => setResults([])}
+          endSession={() => setResults([])}
           results={results}
-          setResults={setResults}
+          addResult={r => setResults(curr => [...curr, r])}
           nlweb={nlweb}
         >
           <div className='fixed left-4 top-12 z-50'>
@@ -152,10 +156,10 @@ export const WithSearchHistory: Story = {
     });
     const localSessions = useSearchSessions();
     const [sessionId, setSessionId] = useState<string>(crypto.randomUUID());
-    const [sessionResults, setSessionResults] = useSearchSession(sessionId);
-    function startSearch(query: string) {
+    const [sessionResults, addResult] = useSearchSession(sessionId);
+    async function startSearch(query: string) {
       const newId = localSessions.sessions.some(s => s.sessionId === sessionId) ? crypto.randomUUID() : sessionId ;
-      localSessions.startSession(newId, query, {
+      await localSessions.startSession(newId, query, {
         site: site.url,
         endpoint: PROD_ENDPOINT
       })
@@ -182,10 +186,11 @@ export const WithSearchHistory: Story = {
         <div className='p-8 flex-1'>
           <div className='max-w-3xl mx-auto'>
             <ChatSearch
+              sessionId={sessionId}
               startSession={startSearch}
               endSession={endSearch}
               results={sessionResults}
-              setResults={setSessionResults}
+              addResult={addResult}
               nlweb={nlweb}
               sidebar={<HistorySidebar
                 sessions={localSessions.sessions}

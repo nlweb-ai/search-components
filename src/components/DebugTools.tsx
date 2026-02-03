@@ -41,10 +41,10 @@ function translateResultsToNlWebRequests(
   }
 
   // Handle loading query and streaming state
-  if (streamingState.loadingQuery) {
+  if (streamingState.query) {
     // Build the search params for the loading query
     const streamingParams: NLWebSearchParams = {
-      query: streamingState.loadingQuery,
+      query: streamingState.query,
       conversationHistory: results.length > 0 ? results.map(r => r.query) : undefined,
     };
 

@@ -1,85 +1,30 @@
+import { useLiveQuery } from "dexie-react-hooks";
+import { db, type QueryResultSet, type Backend, type SearchSession } from './db';
 
-import { SearchResponse} from './useNlWeb';
-import useSWR, { mutate } from "swr";
-
-// 1. The "Fetcher" - simply reads from Local Storage
-const localStorageFetcher = (key:string) => {
-  if (typeof window === "undefined") return null;
-  const item = localStorage.getItem(key);
-  try {
-    return item ? JSON.parse(item) : null;
-  } catch (err) {
-    console.error(err);
-    return null;
-  }
-};
-
-export interface QueryResultSet {
-  query: string;
-  response: SearchResponse;
-}
-
-function useStorageSWR<T>(key:string|null, initialValue:T):[T, (data: T) => void] {
-  // 2. Use SWR
-  // We pass 'fallbackData' to make the initial render synchronous if possible
-  const { data, mutate: mutateKey } = useSWR<T>(key, localStorageFetcher, {
-    fallbackData:
-      typeof window !== "undefined" && key
-        ? localStorageFetcher(key) ?? initialValue
-        : initialValue,
-    revalidateOnFocus: false, // Optional: prevents re-reading storage on window focus
-  });
-
-  // 3. Wrapper to update Local Storage and notify SWR
-  const setValue = (value:T) => {
-    try {
-      const valueToStore = value instanceof Function ? value(data) : value;
-
-      // Update Local Storage
-      if (typeof window !== "undefined" && key) {
-        localStorage.setItem(key, JSON.stringify(valueToStore));
+export type { QueryResultSet, Backend, SearchSession };
+export function useSearchSessions(): {sessions: SearchSession[]; startSession: (sessionId: string, query: string, backend: Backend) => Promise<void>; deleteSession: (sessionId: string) => Promise<void>} {
+  const sessions = useLiveQuery(() => db.sessions.orderBy('updated').reverse().toArray(), []) ?? [];
+  async function startSession(sessionId: string, query: string, backend: Backend) {
+    await db.transaction('rw', db.messages, db.sessions, async () => {
+      // Find a session with the same query. If one exists, delete it.
+      const duplicates = sessions.filter(s => s.query == query);
+      for (const s of duplicates) {
+        await db.messages.where('sessionId').equals(s.sessionId).delete();
+        db.sessions.delete(s.sessionId);
       }
-
-      // Update SWR Cache (this updates all other components using this key)
-      mutateKey(valueToStore, false); 
-      
-      // Optional: Update global cache if you are using the global 'mutate'
-      // mutate(key, valueToStore, false); 
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return [data ?? initialValue, setValue];
-};
-
-export interface Backend {
-  site: string;
-  endpoint: string;
-}
-export interface SearchSession {
-  query: string;
-  sessionId: string;
-  backend:Backend
-}
-export function useSearchSessions(): {sessions: SearchSession[]; startSession: (sessionId: string, query: string, backend: Backend) => void; deleteSession: (sessionId: string) => void} {
-  const [sessions, setSessions] = useStorageSWR<SearchSession[]>("/sessions", []);
-  function startSession(sessionId: string, query: string, backend: Backend) {
-    // Find a session with the same query. If one exists, delete it. 
-    const duplicates = sessions.filter(s => s.query == query);
-    duplicates.forEach(s => {
-      localStorage.removeItem(`/session/${s.sessionId}`);
-      mutate<QueryResultSet[]>(`/session/${s.sessionId}`, []);
-    })
-    const uniqueSessions = sessions.filter(s => s.query != query);
-    setSessions([...uniqueSessions, {sessionId: sessionId, query: query, backend: backend}])
-  } 
-  function deleteSession(sessionId: string) {
-    setSessions(sessions.filter(s => s.sessionId != sessionId));
-    localStorage.removeItem(`/session/${sessionId}`);
-    mutate<QueryResultSet[]>(`/session/${sessionId}`, []);
+      const created = new Date();
+      const updated = new Date();
+      await db.sessions.put({sessionId, query, backend, created, updated});
+    });
   }
-  console.log(sessions);
+
+  async function deleteSession(sessionId: string) {
+    await db.transaction('rw', db.messages, db.sessions, async () => {
+      await db.messages.where('sessionId').equals(sessionId).delete();
+      db.sessions.delete(sessionId);
+    });
+  }
+
   return {
     sessions: sessions,
     startSession: startSession,
@@ -87,15 +32,23 @@ export function useSearchSessions(): {sessions: SearchSession[]; startSession: (
   }
 }
 
-export function useSearchSession(sessionId: string | null):[QueryResultSet[], (data: QueryResultSet[], sessionId?: string) => void] {
-  const [queryResults, setQueryResults] = useStorageSWR<QueryResultSet[]>(sessionId ? `/session/${sessionId}` : null, []);
-  function setResultsOnSession(results: QueryResultSet[], sessionId?: string) {
-    if (sessionId) {
-      localStorage.setItem(`/session/${sessionId}`, JSON.stringify(results));
-      mutate(`/session/${sessionId}`, results);
-    } else {
-      setQueryResults(results);
-    }
+export function useSearchSession(sessionId: string | null):[QueryResultSet[], (data: QueryResultSet) => Promise<void>] {
+  const queryResults = useLiveQuery<QueryResultSet[]>(
+    async () => {
+      if (!sessionId) return [];
+      return await db.messages.where('sessionId').equals(sessionId).sortBy('id')
+    },
+    [sessionId]
+  ) ?? [];
+
+  async function addResult(result: QueryResultSet) {
+    await db.transaction('rw', db.messages, db.sessions, async () => {
+        db.sessions.update(result.sessionId, {
+          updated: new Date()
+        })
+        db.messages.add(result);
+    })
   }
-  return [queryResults, setResultsOnSession]
+
+  return [queryResults, addResult]
 }

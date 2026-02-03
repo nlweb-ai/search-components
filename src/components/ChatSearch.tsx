@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, ImgHTMLAttributes } from 'react';
+import React, { ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
 import { NLWeb, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { XMarkIcon, NewspaperIcon, Square2StackIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/solid'
@@ -263,11 +263,45 @@ function QueryMessage({query} : {query: string}) {
   )
 }
 
-function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, streamingResults, results} : {loadingQuery: string | null; streamingModifiedQuery: string | null; streamingSummary?: string | null; streamingResults: NlwebResult[]; results: QueryResultSet[]}) {
+
+function ChatEntry({index, query, loading, decontextualizedQuery, summary, results} : {
+  index: number; query: string; loading: boolean; decontextualizedQuery?: string; summary?: string; results: NlwebResult[]
+}) {
+  return (
+     <div key={`${query}-${index}`}>
+      {index > 0 ? <QueryMessage query={query}/> : null}
+      {index > 0 && results.length > 0 ? <SearchingFor streaming={loading} query={decontextualizedQuery}/> : null}
+      {(results.length > 0 || loading) ?
+        <AssistantMessage
+          summary={summary}
+          results={results}
+          loading={loading}
+        /> :
+        <div className='flex max-w-3xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
+          No results found
+        </div>
+      }
+      {!loading && 
+        <div className='mt-2 mb-6'>
+          <AssistantMessageActions 
+            content={summary || ''}
+            onViewMore={() => {
+              console.log('Requesting to view more!');
+            }}
+          />
+        </div>
+      }
+    </div>
+  )
+}
+
+function ChatResults({streaming, streamingIndex, loadingQuery, streamingModifiedQuery, streamingSummary, streamingResults, results} : {streaming: boolean; streamingIndex: number; loadingQuery: string | null; streamingModifiedQuery: string | null; streamingSummary?: string | null; streamingResults: NlwebResult[]; results: QueryResultSet[]}) {
+  console.log(streaming, streamingIndex, loadingQuery, results.length)
+  console.log(results);
   return (
     <div className="space-y-4 py-6">
       {results.map((r, idx) =>
-        <div key={`${r.query}-${idx}`}>
+        idx != streamingIndex && <div key={`${r.query}-${idx}`}>
           {idx > 0 ? <QueryMessage query={r.query}/> : null}
           {idx > 0 ? <SearchingFor query={r.response.decontextualizedQuery}/> : null}
           {r.response.results.length > 0 ?
@@ -290,28 +324,45 @@ function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, st
         </div>
       )}
       {loadingQuery && (
-        <div>
-          {results.length > 0 ? <QueryMessage query={loadingQuery}/> : null}
-          {results.length > 0 ? <SearchingFor streaming={true} query={streamingModifiedQuery}/> : null}
-          <AssistantMessage
-            summary={streamingSummary}
-            results={streamingResults}
-            loading={true}
-          />
+        <div key={`${loadingQuery}-${streamingIndex}`}>
+          {streamingIndex > 0 ? <QueryMessage query={loadingQuery}/> : null}
+          {streamingIndex > 0 && streamingResults.length > 0 ? <SearchingFor streaming={streaming} query={streamingModifiedQuery}/> : null}
+          {(streamingResults.length > 0 || streaming) ?
+            <AssistantMessage
+              summary={streamingSummary}
+              results={streamingResults}
+              loading={streaming}
+            /> :
+            <div className='flex max-w-3xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
+              No results found
+            </div>
+          }
+          {!streaming && 
+            <div className='mt-2 mb-6'>
+              <AssistantMessageActions 
+                content={streamingSummary || ''}
+                onViewMore={() => {
+                  console.log('Requesting to view more!');
+                }}
+              />
+            </div>
+          }
         </div>
       )}
     </div>
   )
 }
 
+
 export function ChatSearch({
-  results, setResults, startSession, endSession,
-  nlweb, children, sidebar,
+  results, addResult, startSession, endSession,
+  nlweb, children, sidebar, sessionId= "NLWEB_DEFAULT_SESSION",
 } : {
+  sessionId?: string
   results: QueryResultSet[], 
-  setResults: (r: QueryResultSet[], sessionId?: string) => void; 
-  startSession?: (query: string) => string;
-  endSession?: () => void;
+  addResult: (r: QueryResultSet) => Promise<void> | void; 
+  startSession: (query: string) => Promise<string> | void;
+  endSession: () => void;
   nlweb: NLWeb; children?: ReactNode
   sidebar?: ReactNode
 }) {
@@ -324,15 +375,9 @@ export function ChatSearch({
   }
   async function handleSearch(query: string, isRoot: boolean) {
     let response: SearchResponse;
-    let sessionId:string|null = null;
+    let sId:string|null = sessionId;
     if (isRoot) {
-      if (startSession) {
-        // Start a new session, if supported
-        sessionId = startSession(query);
-      } else {
-        // Wipe the results 
-        setResults([]);
-      }
+      sId = await startSession(query) || sessionId;
       setSearchOpen(true);
       response = await nlweb.search({
         query: query
@@ -343,26 +388,22 @@ export function ChatSearch({
         conversationHistory: results.map(r => r.query)
       })
     }
-    // Remove the from result stream
-    nlweb.clearResults();
     // Add to store, in the correct way
-    if (isRoot) {
-      const initResults = [{query: query, response: response}];
-      if (sessionId) {
-        setResults(initResults, sessionId);
-      } else {
-        setResults(initResults);
-      }
-    } else {
-      setResults([...results, {query: query, response: response}])
-    }
+    if (sId) {
+      const result = {query: query, response: response, sessionId: sId}
+      await addResult(result)
+    } 
   }
-  const rootQuery = results.length > 0 ? results[0].query : nlweb.loadingQuery;
-  const isLoading = !!nlweb.loadingQuery;
+  useEffect(() => {
+    if (results.length > 0 && !searchOpen) {
+      setSearchOpen(true);
+    }
+  }, [results])
+  const rootQuery = results.length > 0 ? results[0].query : nlweb.query;
   return (
     <div>
       <div className="mb-6">
-        <SearchQuery loading={!!nlweb.loadingQuery} handleSearch={(q) => handleSearch(q, true)}/>
+        <SearchQuery loading={!!nlweb.query} handleSearch={(q) => handleSearch(q, true)}/>
       </div>
       <Dialog className={'relative z-50'} open={searchOpen} onClose={closeSearch}>
         <div className="fixed bg-white inset-0 w-screen h-screen overflow-hidden">
@@ -380,13 +421,15 @@ export function ChatSearch({
                       <SearchQuery 
                         key={rootQuery || 'empty-search'}
                         className='bg-gray-50' 
-                        loading={isLoading} 
+                        loading={nlweb.loading} 
                         handleSearch={(q) => handleSearch(q, true)}
                         initQuery={rootQuery}
                       />
                     </div>
                     <ChatResults
-                      loadingQuery={nlweb.loadingQuery}
+                      streaming={nlweb.loading}
+                      streamingIndex={nlweb.streamingIndex}
+                      loadingQuery={nlweb.query}
                       streamingResults={nlweb.results}
                       streamingSummary={nlweb.summary || null}
                       streamingModifiedQuery={nlweb.decontextualizedQuery || null}
@@ -398,8 +441,8 @@ export function ChatSearch({
                 <div className="absolute bottom-8 left-4 right-4">
                   <div className='max-w-xl mx-auto'>
                     <SearchQuery 
-                      key={nlweb.loadingQuery}
-                      loading={isLoading} 
+                      key={nlweb.query}
+                      loading={nlweb.loading} 
                       handleSearch={(q) => handleSearch(q, false)}
                       inputClassName="max-h-[60vh] overflow-y-auto"
                       className='shadow-xl bg-white'

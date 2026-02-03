@@ -2,14 +2,9 @@
 import { Dexie, type EntityTable } from "dexie"
 import { SearchResponse} from './useNlWeb';
 
-interface Friend {
-  id: number
-  name: string
-  age: number
-}
 
 interface QueryResultSet {
-  id: string;
+  id?: string;
   sessionId: string;
   query: string;
   response: SearchResponse;
@@ -23,7 +18,9 @@ interface Backend {
 interface SearchSession {
   query: string;
   sessionId: string;
-  backend:Backend
+  backend:Backend;
+  updated: Date;
+  created: Date;
 }
 
 
@@ -41,8 +38,8 @@ const db = new Dexie("ChatHistory") as Dexie & {
 // Schema declaration:
 db.version(1).stores({
   messages: "++id, sessionId", // primary key "id" (for the runtime!),
-  sessions: "sessionId"
+  sessions: "sessionId, created, updated"
 })
 
-export type { Friend, QueryResultSet, Backend, SearchSession }
+export type { QueryResultSet, Backend, SearchSession }
 export { db }
