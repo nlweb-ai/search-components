@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
+import { RefObject, ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
 import { NLWeb, NLWebSearchState, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { XMarkIcon, NewspaperIcon, Square2StackIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/solid'
@@ -240,13 +240,14 @@ function AssistantMessageActions({content, onViewMore} : {content: string; onVie
   )
 }
 
-function AssistantMessage({summary, results, loading} : {summary?: string | null; results: NlwebResult[]; loading?: boolean}) {
+function AssistantMessage({summary, results, loading, anchorRef} : {summary?: string | null; results: NlwebResult[]; loading?: boolean; anchorRef?: RefObject<HTMLDivElement>}) {
   const skeletonCount = Math.max(0, 9 - results.length);
   return (
     <div className="flex justify-start">
       <div className="max-w-3xl flex-1 bg-gray-50 p-6 rounded-lg">
         <div className="space-y-4 mb-2">
           <SummaryCard summary={summary}/>
+          <div ref={anchorRef}/>
           <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
             {results.map((r, idx) =>
               <ResultCard result={r} key={(r.url || r.name || idx) as string}/>
@@ -274,8 +275,8 @@ function QueryMessage({query} : {query: string}) {
 }
 
 
-function ChatEntry({index, query, loading, decontextualizedQuery, summary, results} : {
-  index: number; query: string; loading: boolean; decontextualizedQuery?: string | null; summary?: string | null; results: NlwebResult[]
+function ChatEntry({index, query, loading, decontextualizedQuery, summary, results, anchorRef} : {
+  index: number; query: string; loading: boolean; decontextualizedQuery?: string | null; summary?: string | null; results: NlwebResult[]; anchorRef?: RefObject<HTMLDivElement>
 }) {
   return (
      <div key={`${query}-${index}`}>
@@ -283,6 +284,7 @@ function ChatEntry({index, query, loading, decontextualizedQuery, summary, resul
       {index > 0 ? <SearchingFor streaming={loading} query={decontextualizedQuery}/> : null}
       {(results.length > 0 || loading) ?
         <AssistantMessage
+          anchorRef={anchorRef}
           summary={summary}
           results={results}
           loading={loading}
@@ -305,7 +307,7 @@ function ChatEntry({index, query, loading, decontextualizedQuery, summary, resul
   )
 }
 
-function ChatResults({nlweb, results} : {nlweb: NLWebSearchState; results: QueryResultSet[]}) {
+function ChatResults({nlweb, results, anchorRef} : {nlweb: NLWebSearchState; results: QueryResultSet[]; anchorRef:  RefObject<HTMLDivElement>}) {
   return (
     <div className="space-y-4 py-6">
       {results.map((r, idx) =>
@@ -329,6 +331,7 @@ function ChatResults({nlweb, results} : {nlweb: NLWebSearchState; results: Query
           summary={nlweb.summary}
           decontextualizedQuery={nlweb.decontextualizedQuery}
           loading={nlweb.loading}
+          anchorRef={anchorRef}
         />
       )}
     </div>
@@ -341,14 +344,14 @@ export function ChatSearch({
   nlweb, children, sidebar, sessionId= "NLWEB_DEFAULT_SESSION",
 } : {
   sessionId?: string
-  results: QueryResultSet[], 
-  addResult: (r: QueryResultSet) => Promise<void> | void; 
+  results: QueryResultSet[],
+  addResult: (r: QueryResultSet) => Promise<void> | void;
   startSession: (query: string) => Promise<string> | void;
   endSession: () => void;
   nlweb: NLWeb; children?: ReactNode
   sidebar?: ReactNode
 }) {
-  const chatRef = useAutoScroll<HTMLDivElement>([nlweb.query])
+  const { containerRef: chatRef, anchorRef } = useAutoScroll<HTMLDivElement>([nlweb.query])
   const [searchOpen, setSearchOpen] = useState(results.length > 0);
   function closeSearch() {
     setSearchOpen(false);
@@ -412,6 +415,7 @@ export function ChatSearch({
                     <ChatResults
                       nlweb={nlweb}
                       results={results}
+                      anchorRef={anchorRef}
                     />
                   </div>
                 </div>

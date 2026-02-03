@@ -1,15 +1,21 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-export const useAutoScroll = <T extends HTMLElement>(dependency: any[]): React.RefObject<T> => {
+export interface AutoScrollRefs<T extends HTMLElement> {
+  containerRef: React.RefObject<T>;
+  anchorRef: React.RefObject<HTMLDivElement>;
+}
+
+export const useAutoScroll = <T extends HTMLElement>(dependency: any[]): AutoScrollRefs<T> => {
   const containerRef = useRef<T>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(true);
 
-  // Function to scroll to the bottom
-  const scrollToBottom = useCallback(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: containerRef.current.scrollHeight,
-        behavior: 'smooth'
+  // Function to scroll to the anchor element
+  const scrollToAnchor = useCallback(() => {
+    if (anchorRef.current && containerRef.current) {
+      anchorRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
       });
     }
   }, []);
@@ -40,11 +46,11 @@ export const useAutoScroll = <T extends HTMLElement>(dependency: any[]): React.R
   // Effect to manage auto-scrolling when dependency changes (e.g., new message)
   useEffect(() => {
     if (shouldScrollRef.current) {
-      scrollToBottom();
+      scrollToAnchor();
     }
   }, dependency); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return containerRef;
+  return { containerRef, anchorRef };
 };
 
 export default useAutoScroll;
