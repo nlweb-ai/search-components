@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
+import { ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
 import { NLWeb, NLWebSearchState, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { XMarkIcon, NewspaperIcon, Square2StackIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/solid'
@@ -7,7 +7,7 @@ import { getThumbnailCandidates, isMovieResult, NlwebResult } from '../lib/parse
 import { shortQuantity, intersperse } from '../lib/util';
 import {QueryResultSet} from '../lib/useHistory';
 import {SearchQuery} from './SearchQuery';
-
+import {useAutoScroll} from '../lib/useAutoScroll';
 
 function decodeHtmlEntities(text: string): string {
   return text
@@ -31,6 +31,8 @@ function ResultCardSkeleton() {
           <div className="space-y-1">
             <div className="h-3 bg-gray-200 rounded w-full"></div>
             <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
           </div>
         </div>
       </div>
@@ -68,7 +70,7 @@ function ResultCard({result} : {result: NlwebResult}) {
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
               </svg>
-              <span>{result.site}</span>
+              <span className='truncate'>{result.site}</span>
             </div>
           )}
         </div>
@@ -171,7 +173,6 @@ function SummaryCard({summary} : {summary? : string | null}) {
       <div className="h-4 bg-gray-200 rounded-md w-full"></div>
       <div className="h-4 bg-gray-200 rounded-md w-10/12"></div>
       <div className="h-4 bg-gray-200 rounded-md w-full"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-9/12"></div>
     </div>
   )
 }
@@ -338,6 +339,7 @@ export function ChatSearch({
   nlweb: NLWeb; children?: ReactNode
   sidebar?: ReactNode
 }) {
+  const chatRef = useAutoScroll<HTMLDivElement>([nlweb.query])
   const [searchOpen, setSearchOpen] = useState(results.length > 0);
   function closeSearch() {
     setSearchOpen(false);
@@ -387,7 +389,7 @@ export function ChatSearch({
             <div className='flex-1 flex flex-col overflow-hidden'>
               {children}
               <div className='relative flex-1 overflow-hidden flex flex-col'>
-                <div className='flex-1 overflow-y-auto p-4 pt-16 pb-24'>
+                <div ref={chatRef} className='flex-1 overflow-y-auto p-4 pt-16 pb-24'>
                   <div className='max-w-7xl mx-auto'>
                     <div className="mb-6 max-w-xl mx-auto">
                       <SearchQuery 

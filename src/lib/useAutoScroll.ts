@@ -1,13 +1,16 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-const useAutoScroll = <T extends HTMLElement>(dependency: any[]): React.RefObject<T> => {
+export const useAutoScroll = <T extends HTMLElement>(dependency: any[]): React.RefObject<T> => {
   const containerRef = useRef<T>(null);
   const shouldScrollRef = useRef(true);
 
   // Function to scroll to the bottom
   const scrollToBottom = useCallback(() => {
     if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }, []);
 

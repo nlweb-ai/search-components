@@ -220,7 +220,9 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
                 )}
                 aria-placeholder={placeholder}
                 placeholder={
-                  <div className="absolute left-10 top-3 text-base text-gray-400 pointer-events-none select-none">
+                  <div className={clsx("absolute top-3 text-base text-gray-400 pointer-events-none select-none",                    isMultiline ? "left-3" : "left-10"
+
+                  )}>
                     {placeholder}
                   </div>
                 }
