@@ -241,7 +241,7 @@ function AssistantMessageActions({content, onViewMore} : {content: string; onVie
 }
 
 function AssistantMessage({summary, results, loading} : {summary?: string | null; results: NlwebResult[]; loading?: boolean}) {
-  const skeletonCount = Math.max(0, 3 - results.length);
+  const skeletonCount = Math.max(0, 9 - results.length);
   return (
     <div className="flex justify-start">
       <div className="max-w-3xl flex-1 bg-gray-50 p-6 rounded-lg">

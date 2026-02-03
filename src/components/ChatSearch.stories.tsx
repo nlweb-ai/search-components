@@ -199,6 +199,7 @@ export const WithSearchHistory: Story = {
               addResult={addResult}
               nlweb={nlweb}
               sidebar={<HistorySidebar
+                selected={sessionId}
                 sessions={localSessions.sessions}
                 onSelect={selectSession}
                 onDelete={localSessions.deleteSession}
