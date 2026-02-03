@@ -19,9 +19,9 @@ function SiteBadge({site} : {site: string}) {
   )
 }
 
-function SessionButton({session, onSelect, onDelete} : {session: SearchSession; onSelect: () => void; onDelete: () => void;}) {
+function SessionButton({session, onSelect, onDelete, selected=false} : {session: SearchSession; onSelect: () => void; onDelete: () => void; selected?: boolean}) {
   return (
-    <div className='flex group hover:bg-gray-100 rounded-md overflow-hidden'>
+    <div className={clsx('flex group hover:bg-gray-100 rounded-md overflow-hidden', selected ? 'bg-gray-200/50' : '')}>
       <Button
         onClick={onSelect}
         className='w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md truncate'
@@ -39,11 +39,13 @@ function SessionButton({session, onSelect, onDelete} : {session: SearchSession; 
 } 
 
 export function HistorySidebar({
+  selected,
   sessions,
   onSelect,
   onDelete,
   onCreate,
 }: {
+  selected?: string;
   sessions: SearchSession[];
   onSelect: (session: SearchSession) => void;
   onDelete: (sessionId: string) => void;
@@ -60,7 +62,7 @@ export function HistorySidebar({
     return acc;
   }, {} as GroupedSessions);
   return (
-    <div className={clsx('flex-1 flex flex-col  relative z-50 transition-all', isOpen ? 'max-w-80' : 'max-w-12')}>
+    <div className={clsx('flex-1 flex flex-col  relative z-50 transition-all', isOpen ? 'max-w-70' : 'max-w-12')}>
         <div className='flex flex-col flex-1 overflow-hidden'>
             <div className={
               clsx('absolute right-2 top-0 h-12 flex items-center', !isOpen ? 'left-2 flex justify-center' : '')
@@ -93,6 +95,7 @@ export function HistorySidebar({
                         {siteSessions.map((session) => (
                           <SessionButton
                             key={session.sessionId}
+                            selected={session.sessionId == selected}
                             session={session}
                             onSelect={() => onSelect(session)}
                             onDelete={() => onDelete(session.sessionId)}

@@ -20,15 +20,21 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      dexie:
+        specifier: ^4.3.0
+        version: 4.3.0
+      dexie-react-hooks:
+        specifier: ^4.2.0
+        version: 4.2.0(@types/react@18.3.27)(dexie@4.3.0)(react@18.3.1)
       lexical:
         specifier: ^0.40.0
         version: 0.40.0
       schema-dts:
         specifier: ^1.1.5
         version: 1.1.5
-      swr:
-        specifier: ^2.3.8
-        version: 2.3.8(react@18.3.1)
+      tw-shimmer:
+        specifier: ^0.4.4
+        version: 0.4.4(tailwindcss@4.1.18)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -1569,6 +1575,16 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
+  dexie-react-hooks@4.2.0:
+    resolution: {integrity: sha512-u7KqTX9JpBQK8+tEyA9X0yMGXlSCsbm5AU64N6gjvGk/IutYDpLBInMYEAEC83s3qhIvryFS+W+sqLZUBEvePQ==}
+    peerDependencies:
+      '@types/react': '>=16'
+      dexie: '>=4.2.0-alpha.1 <5.0.0'
+      react: '>=16'
+
+  dexie@4.3.0:
+    resolution: {integrity: sha512-5EeoQpJvMKHe6zWt/FSIIuRa3CWlZeIl6zKXt+Lz7BU6RoRRLgX9dZEynRfXrkLcldKYCBiz7xekTEylnie1Ug==}
+
   dir-glob@3.0.1:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
     engines: {node: '>=8'}
@@ -2683,11 +2699,6 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
-  swr@2.3.8:
-    resolution: {integrity: sha512-gaCPRVoMq8WGDcWj9p4YWzCMPHzE0WNl6W8ADIx9c3JBEIdMkJGMzW+uzXvxHMltwcYACr9jP+32H8/hgwMR7w==}
-    peerDependencies:
-      react: ^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
   tabbable@6.4.0:
     resolution: {integrity: sha512-05PUHKSNE8ou2dwIxTngl4EzcnsCDZGJ/iCLtDflR/SHB/ny14rXc+qU5P4mG9JkusiV7EivzY9Mhm55AzAvCg==}
 
@@ -2772,6 +2783,11 @@ packages:
         optional: true
       typescript:
         optional: true
+
+  tw-shimmer@0.4.4:
+    resolution: {integrity: sha512-uSt6nWbt7k3Xuzv8/vKRiyf57Jcu/rQOcSxcvJvuAY8+DxPFKMEM6z03X3N10EYAmzCIFIMsHmV5xrmTDuQrtA==}
+    peerDependencies:
+      tailwindcss: '>=4.0.0-0'
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -4435,6 +4451,14 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
+  dexie-react-hooks@4.2.0(@types/react@18.3.27)(dexie@4.3.0)(react@18.3.1):
+    dependencies:
+      '@types/react': 18.3.27
+      dexie: 4.3.0
+      react: 18.3.1
+
+  dexie@4.3.0: {}
+
   dir-glob@3.0.1:
     dependencies:
       path-type: 4.0.0
@@ -5749,12 +5773,6 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  swr@2.3.8(react@18.3.1):
-    dependencies:
-      dequal: 2.0.3
-      react: 18.3.1
-      use-sync-external-store: 1.6.0(react@18.3.1)
-
   tabbable@6.4.0: {}
 
   tailwindcss@4.1.18: {}
@@ -5833,6 +5851,10 @@ snapshots:
       - supports-color
       - tsx
       - yaml
+
+  tw-shimmer@0.4.4(tailwindcss@4.1.18):
+    dependencies:
+      tailwindcss: 4.1.18
 
   type-check@0.4.0:
     dependencies:

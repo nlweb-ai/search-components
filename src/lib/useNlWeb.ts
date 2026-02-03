@@ -19,9 +19,11 @@ interface NLWebError {
  */
 export interface NLWebSearchState {
     results: NlwebResult[];
+    streamingIndex: number;
     summary?: string;
     decontextualizedQuery?: string;
-    loadingQuery: string | null;
+    query: string | null;
+    loading: boolean;
     error: string | null;
     rawLogs?: object[]
 }
@@ -139,9 +141,11 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
     
     const [state, setState] = useState<NLWebSearchState>({
         results: [],
-        loadingQuery: null,
+        query: null,
         error: null,
-        rawLogs: []
+        rawLogs: [],
+        streamingIndex: -1,
+        loading: false
     });
 
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -231,6 +235,7 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
                                 rawLogs: debugLogs,
                                 summary: summary,
                                 results: sortedResults,
+                                decontextualizedQuery: decontextualizedQuery
                             }));
                         }
 
@@ -254,6 +259,7 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
                                 ...prev,
                                 rawLogs: debugLogs,
                                 results: sortedResults,
+                                decontextualizedQuery: decontextualizedQuery
                             }));
                         }
 
@@ -288,13 +294,17 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
         // Create new abort controller
         const abortController = new AbortController();
         abortControllerRef.current = abortController;
-
+        
+        const query = params.query;
+        const streamingIndex = params.conversationHistory ? params.conversationHistory.length : 0;
         // Reset state
         setState({
             results: [],
-            loadingQuery: params.query,
+            query: query,
             error: null,
-            rawLogs: []
+            rawLogs: [],
+            streamingIndex: streamingIndex,
+            loading: true
         });
 
         try {
@@ -322,9 +332,12 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
             setState({
                 results: results.results,
                 summary: results.summary,
-                loadingQuery: null,
+                decontextualizedQuery: results.decontextualizedQuery,
                 error: null,
-                rawLogs: results.rawLogs
+                query: query,
+                streamingIndex: streamingIndex,
+                rawLogs: results.rawLogs,
+                loading: false
             });
 
             return results;
@@ -334,9 +347,11 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
                 const errorMessage = error.message || 'An error occurred during search';
                 setState({
                     results: [],
-                    loadingQuery: null,
+                    query: null,
                     error: errorMessage,
-                    rawLogs:[]
+                    rawLogs:[],
+                    streamingIndex: streamingIndex,
+                    loading: false
                 });
                 throw error;
             }
@@ -359,7 +374,7 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
 
             setState(prev => ({
                 ...prev,
-                loadingQuery: null,
+                query: null,
             }));
         }
     }, []);
@@ -370,8 +385,10 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
     const clearResults = useCallback(() => {
         setState({
             results: [],
-            loadingQuery: null,
+            query: null,
             error: null,
+            streamingIndex: -1,
+            loading: false
         });
     }, []);
 

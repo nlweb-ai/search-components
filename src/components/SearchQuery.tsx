@@ -127,7 +127,6 @@ function EditorStatePlugin({
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const currentHeight = entry.contentRect.height;
-        console.log(currentHeight, initialHeightRef.current);
         // Only set to true when height increases (text wraps)
         if (initialHeightRef.current !== null && currentHeight >= initialHeightRef.current) {
           if (!isMultilineRef.current) {
@@ -192,7 +191,6 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
     setIsMultiline(isMultiline);
   }, []);
 
-  console.log('sskdjfakl')
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <div
@@ -205,7 +203,7 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
         )}
       >
         <div className={clsx(
-          'absolute left-3 pointer-events-none z-10',
+          'absolute left-3.5 pointer-events-none z-10',
           isMultiline ? 'hidden' : ''
         )}>
           <MagnifyingGlassIcon className='size-4 text-gray-400'/>
@@ -222,7 +220,10 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
                 )}
                 aria-placeholder={placeholder}
                 placeholder={
-                  <div className="absolute left-10 top-3 text-base text-gray-400 pointer-events-none select-none">
+                  <div className={clsx("absolute top-3 text-base text-gray-400 pointer-events-none select-none",
+                    isMultiline ? "left-4" : "left-10"
+
+                  )}>
                     {placeholder}
                   </div>
                 }

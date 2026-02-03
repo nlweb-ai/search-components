@@ -1,5 +1,5 @@
-import React, { ReactNode, useState, ImgHTMLAttributes } from 'react';
-import { NLWeb, SearchResponse} from '../lib/useNlWeb';
+import { RefObject, ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
+import { NLWeb, NLWebSearchState, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { XMarkIcon, NewspaperIcon, Square2StackIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
@@ -7,7 +7,7 @@ import { getThumbnailCandidates, isMovieResult, NlwebResult } from '../lib/parse
 import { shortQuantity, intersperse } from '../lib/util';
 import {QueryResultSet} from '../lib/useHistory';
 import {SearchQuery} from './SearchQuery';
-
+import {useAutoScroll} from '../lib/useAutoScroll';
 
 function decodeHtmlEntities(text: string): string {
   return text
@@ -23,15 +23,17 @@ function decodeHtmlEntities(text: string): string {
 
 function ResultCardSkeleton() {
   return (
-    <div className="block w-full transition-all duration-200 overflow-hidden animate-pulse">
+    <div className="block w-full transition-all overflow-hidden shimmer-container">
       <div className="flex flex-col gap-3">
-        <div className="h-36 w-full bg-gray-200 rounded"></div>
-        <div className="flex-1 min-w-0">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-36 w-full shimmer shimmer-bg shimmer-color-gray-300/30 [--shimmer-x:60] [--shimmer-y:0] bg-gray-100 rounded"></div>
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-4  bg-gray-100 rounded w-3/4"></div>
           <div className="space-y-1">
-            <div className="h-3 bg-gray-200 rounded w-full"></div>
-            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-100 rounded w-full"></div>
+            <div className="h-3 bg-gray-100 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-100 rounded w-5/6"></div>
           </div>
+          <div className="h-2  bg-gray-100 rounded w-1/6"></div>
         </div>
       </div>
     </div>
@@ -68,7 +70,7 @@ function ResultCard({result} : {result: NlwebResult}) {
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
               </svg>
-              <span>{result.site}</span>
+              <span className='truncate'>{result.site}</span>
             </div>
           )}
         </div>
@@ -154,6 +156,17 @@ function Thumbnail({ srcs, className, ...rest }: { srcs: string[]; } & ImgHTMLAt
   );
 }
 
+function SummarySkeleton() {
+  return (
+     <div className="space-y-3 w-full md:min-w-md shimmer-container">
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:0] bg-gray-200 rounded-md w-full"></div>
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:20] bg-gray-200 rounded-md w-11/12"></div>
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:40] bg-gray-200 rounded-md w-full"></div>
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:60] bg-gray-200 rounded-md w-10/12"></div>
+      <div className="h-4 shimmer shimmer-bg shimmer-color-gray-400/20 [--shimmer-x:60] [--shimmer-y:80] bg-gray-200 rounded-md w-full"></div>
+    </div>
+  )
+}
 function SummaryCard({summary} : {summary? : string | null}) {
   if (summary) {
     return (
@@ -165,26 +178,23 @@ function SummaryCard({summary} : {summary? : string | null}) {
 
   // Skeleton loader with pulsing animation
   return (
-    <div className="space-y-3 w-full min-w-md animate-pulse">
-      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-11/12"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-10/12"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-full"></div>
-      <div className="h-4 bg-gray-200 rounded-md w-9/12"></div>
-    </div>
-  )
-}
-function SimpleSkeleton() {
-  return (
-    <div className="h-2 bg-gray-100 animate-pulse rounded-md max-w-48"></div>
+    <SummarySkeleton/>
   )
 }
 
 function SearchingFor({query, streaming} : {query?: string | null; streaming?: boolean}) {
   return (
-    <div className='text-gray-500 gap-1 flex items-center text-sm pb-2 px-2'>
-      {streaming ? "Searching:" : "Searched:"} {query ? <span className='text-gray-800 overflow-ellipse'>{query}</span> : <SimpleSkeleton/>}
+    <div className={clsx('text-gray-500 gap-1 flex items-center text-sm pb-2 px-2', streaming && 'shimmer')}>
+      {query ? (
+        <span
+          key={query}
+          className='text-gray-800 overflow-ellipse'
+        >
+          Searching for: {query}
+        </span>
+      ) : (
+        "Working on it"
+      )}
     </div>
   )
 }
@@ -230,13 +240,14 @@ function AssistantMessageActions({content, onViewMore} : {content: string; onVie
   )
 }
 
-function AssistantMessage({summary, results, loading} : {summary?: string | null; results: NlwebResult[]; loading?: boolean}) {
-  const skeletonCount = Math.max(0, 3 - results.length);
+function AssistantMessage({summary, results, loading, anchorRef} : {summary?: string | null; results: NlwebResult[]; loading?: boolean; anchorRef?: RefObject<HTMLDivElement>}) {
+  const skeletonCount = Math.max(0, 9 - results.length);
   return (
     <div className="flex justify-start">
       <div className="max-w-3xl flex-1 bg-gray-50 p-6 rounded-lg">
         <div className="space-y-4 mb-2">
           <SummaryCard summary={summary}/>
+          <div ref={anchorRef}/>
           <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
             {results.map((r, idx) =>
               <ResultCard result={r} key={(r.url || r.name || idx) as string}/>
@@ -263,58 +274,84 @@ function QueryMessage({query} : {query: string}) {
   )
 }
 
-function ChatResults({loadingQuery, streamingModifiedQuery, streamingSummary, streamingResults, results} : {loadingQuery: string | null; streamingModifiedQuery: string | null; streamingSummary?: string | null; streamingResults: NlwebResult[]; results: QueryResultSet[]}) {
+
+function ChatEntry({index, query, loading, decontextualizedQuery, summary, results, anchorRef} : {
+  index: number; query: string; loading: boolean; decontextualizedQuery?: string | null; summary?: string | null; results: NlwebResult[]; anchorRef?: RefObject<HTMLDivElement>
+}) {
+  return (
+     <div key={`${query}-${index}`}>
+      {index > 0 ? <QueryMessage query={query}/> : null}
+      {index > 0 ? <SearchingFor streaming={loading} query={decontextualizedQuery}/> : null}
+      {(results.length > 0 || loading) ?
+        <AssistantMessage
+          anchorRef={anchorRef}
+          summary={summary}
+          results={results}
+          loading={loading}
+        /> :
+        <div className='flex max-w-3xl text-base text-gray-500 justify-start bg-gray-50 p-6 rounded-lg'>
+          No results found
+        </div>
+      }
+      {!loading && 
+        <div className='mt-2 mb-6'>
+          <AssistantMessageActions 
+            content={summary || ''}
+            onViewMore={() => {
+              console.log('Requesting to view more!');
+            }}
+          />
+        </div>
+      }
+    </div>
+  )
+}
+
+function ChatResults({nlweb, results, anchorRef} : {nlweb: NLWebSearchState; results: QueryResultSet[]; anchorRef:  RefObject<HTMLDivElement>}) {
   return (
     <div className="space-y-4 py-6">
       {results.map((r, idx) =>
-        <div key={`${r.query}-${idx}`}>
-          {idx > 0 ? <QueryMessage query={r.query}/> : null}
-          {idx > 0 ? <SearchingFor query={r.response.decontextualizedQuery}/> : null}
-          {r.response.results.length > 0 ?
-            <AssistantMessage 
-              summary={r.response.summary} 
-              results={r.response.results}
-            /> : 
-            <div className='flex max-w-3xl text-base justify-start mb-6 bg-gray-50 p-6 rounded-lg'>
-              No results found
-            </div>
-          }
-          <div className='mt-2 mb-6'>
-             <AssistantMessageActions 
-                content={r.response.summary || ''}
-                onViewMore={() => {
-                  console.log('Requesting to view more!');
-                }}
-              />
-          </div>
-        </div>
-      )}
-      {loadingQuery && (
-        <div>
-          {results.length > 0 ? <QueryMessage query={loadingQuery}/> : null}
-          {results.length > 0 ? <SearchingFor streaming={true} query={streamingModifiedQuery}/> : null}
-          <AssistantMessage
-            summary={streamingSummary}
-            results={streamingResults}
-            loading={true}
+        idx != nlweb.streamingIndex && 
+          <ChatEntry
+            key={`${r.query}-${idx}`}
+            loading={false}
+            index={idx}
+            query={r.query}
+            results={r.response.results}
+            summary={r.response.summary}
+            decontextualizedQuery={r.response.decontextualizedQuery}
           />
-        </div>
+      )}
+      {nlweb.query && (
+        <ChatEntry
+          key={`${nlweb.query}-${nlweb.streamingIndex}`}
+          index={nlweb.streamingIndex}
+          query={nlweb.query}
+          results={nlweb.results}
+          summary={nlweb.summary}
+          decontextualizedQuery={nlweb.decontextualizedQuery}
+          loading={nlweb.loading}
+          anchorRef={anchorRef}
+        />
       )}
     </div>
   )
 }
 
+
 export function ChatSearch({
-  results, setResults, startSession, endSession,
-  nlweb, children, sidebar,
+  results, addResult, startSession, endSession,
+  nlweb, children, sidebar, sessionId= "NLWEB_DEFAULT_SESSION",
 } : {
-  results: QueryResultSet[], 
-  setResults: (r: QueryResultSet[], sessionId?: string) => void; 
-  startSession?: (query: string) => string;
-  endSession?: () => void;
+  sessionId?: string
+  results: QueryResultSet[],
+  addResult: (r: QueryResultSet) => Promise<void> | void;
+  startSession: (query: string) => Promise<string> | void;
+  endSession: () => void;
   nlweb: NLWeb; children?: ReactNode
   sidebar?: ReactNode
 }) {
+  const { containerRef: chatRef, anchorRef } = useAutoScroll<HTMLDivElement>([nlweb.query])
   const [searchOpen, setSearchOpen] = useState(results.length > 0);
   function closeSearch() {
     setSearchOpen(false);
@@ -324,15 +361,9 @@ export function ChatSearch({
   }
   async function handleSearch(query: string, isRoot: boolean) {
     let response: SearchResponse;
-    let sessionId:string|null = null;
+    let sId:string|null = sessionId;
     if (isRoot) {
-      if (startSession) {
-        // Start a new session, if supported
-        sessionId = startSession(query);
-      } else {
-        // Wipe the results 
-        setResults([]);
-      }
+      sId = await startSession(query) || sessionId;
       setSearchOpen(true);
       response = await nlweb.search({
         query: query
@@ -343,26 +374,22 @@ export function ChatSearch({
         conversationHistory: results.map(r => r.query)
       })
     }
-    // Remove the from result stream
-    nlweb.clearResults();
     // Add to store, in the correct way
-    if (isRoot) {
-      const initResults = [{query: query, response: response}];
-      if (sessionId) {
-        setResults(initResults, sessionId);
-      } else {
-        setResults(initResults);
-      }
-    } else {
-      setResults([...results, {query: query, response: response}])
-    }
+    if (sId) {
+      const result = {query: query, response: response, sessionId: sId}
+      await addResult(result)
+    } 
   }
-  const rootQuery = results.length > 0 ? results[0].query : nlweb.loadingQuery;
-  const isLoading = !!nlweb.loadingQuery;
+  useEffect(() => {
+    if (results.length > 0 && !searchOpen) {
+      setSearchOpen(true);
+    }
+  }, [results])
+  const rootQuery = results.length > 0 ? results[0].query : nlweb.query;
   return (
     <div>
-      <div className="mb-6">
-        <SearchQuery loading={!!nlweb.loadingQuery} handleSearch={(q) => handleSearch(q, true)}/>
+      <div className="mb-6 h-12 relative z-30">
+        <SearchQuery loading={nlweb.loading} handleSearch={(q) => handleSearch(q, true)}/>
       </div>
       <Dialog className={'relative z-50'} open={searchOpen} onClose={closeSearch}>
         <div className="fixed bg-white inset-0 w-screen h-screen overflow-hidden">
@@ -374,23 +401,21 @@ export function ChatSearch({
             <div className='flex-1 flex flex-col overflow-hidden'>
               {children}
               <div className='relative flex-1 overflow-hidden flex flex-col'>
-                <div className='flex-1 overflow-y-auto p-4 pt-16 pb-24'>
+                <div ref={chatRef} className='flex-1 overflow-y-auto p-4 pt-16 pb-24'>
                   <div className='max-w-7xl mx-auto'>
                     <div className="mb-6 max-w-xl mx-auto">
                       <SearchQuery 
                         key={rootQuery || 'empty-search'}
                         className='bg-gray-50' 
-                        loading={isLoading} 
+                        loading={nlweb.loading} 
                         handleSearch={(q) => handleSearch(q, true)}
                         initQuery={rootQuery}
                       />
                     </div>
                     <ChatResults
-                      loadingQuery={nlweb.loadingQuery}
-                      streamingResults={nlweb.results}
-                      streamingSummary={nlweb.summary || null}
-                      streamingModifiedQuery={nlweb.decontextualizedQuery || null}
+                      nlweb={nlweb}
                       results={results}
+                      anchorRef={anchorRef}
                     />
                   </div>
                 </div>
@@ -398,8 +423,8 @@ export function ChatSearch({
                 <div className="absolute bottom-8 left-4 right-4">
                   <div className='max-w-xl mx-auto'>
                     <SearchQuery 
-                      key={nlweb.loadingQuery}
-                      loading={isLoading} 
+                      key={nlweb.query}
+                      loading={nlweb.loading} 
                       handleSearch={(q) => handleSearch(q, false)}
                       inputClassName="max-h-[60vh] overflow-y-auto"
                       className='shadow-xl bg-white'
