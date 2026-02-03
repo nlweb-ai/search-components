@@ -200,7 +200,6 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
                                 throw new Error(`Error (${error.code}): ${error.message}`);
                             } else if (data._meta.decontextualized_query) {
                                 decontextualizedQuery = data._meta.decontextualized_query;
-                                console.log(decontextualizedQuery);
                                  setState(prev => ({
                                     ...prev,
                                     rawLogs: debugLogs,

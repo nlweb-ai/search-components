@@ -185,7 +185,16 @@ function SummaryCard({summary} : {summary? : string | null}) {
 function SearchingFor({query, streaming} : {query?: string | null; streaming?: boolean}) {
   return (
     <div className={clsx('text-gray-500 gap-1 flex items-center text-sm pb-2 px-2', streaming && 'shimmer')}>
-    {query ? <span className='text-gray-800 overflow-ellipse'>Searching for: {query}</span> : "Working on it"}
+      {query ? (
+        <span
+          key={query}
+          className='text-gray-800 overflow-ellipse'
+        >
+          Searching for: {query}
+        </span>
+      ) : (
+        "Working on it"
+      )}
     </div>
   )
 }

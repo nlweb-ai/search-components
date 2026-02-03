@@ -190,6 +190,7 @@ export const WithSearchHistory: Story = {
         />
         <div className='p-8 flex-1'>
           <div className='max-w-3xl mx-auto'>
+
             <ChatSearch
               sessionId={sessionId}
               startSession={startSearch}
