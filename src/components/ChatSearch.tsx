@@ -182,7 +182,7 @@ function SummaryCard({summary} : {summary? : string | null}) {
   )
 }
 
-function SearchingFor({query, streaming} : {query?: string | null; streaming?: boolean}) {
+function SearchingFor({query, streaming, page=0, maxPages=1} : {query?: string | null; streaming?: boolean; page?: number; maxPages?: number}) {
   return (
     <div className={clsx('text-gray-500 gap-1 flex items-center text-sm pb-2 px-2', streaming && 'shimmer')}>
       {query ? (
@@ -190,7 +190,7 @@ function SearchingFor({query, streaming} : {query?: string | null; streaming?: b
           key={query}
           className='text-gray-800 overflow-ellipse'
         >
-          Searching for: {query}
+          Searching for{page > 0 ? ` Page ${page + 1}/${maxPages}` : ""}: {query}
         </span>
       ) : (
         "Working on it"
@@ -213,7 +213,7 @@ function ActionButton({children, onClick} : {children: ReactNode; onClick?: () =
   )
 }
 
-function AssistantMessageActions({content, onViewMore} : {content: string; onViewMore: () => void}) {
+function AssistantMessageActions({content, onViewMore} : {content: string; onViewMore?: null | (() => void)}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -233,9 +233,11 @@ function AssistantMessageActions({content, onViewMore} : {content: string; onVie
       <ActionButton onClick={handleCopy}>
         {copied ? <CheckIcon className="text-green-600" /> : <Square2StackIcon/>}
       </ActionButton>
-      <ActionButton onClick={onViewMore}>
-        <ArrowPathIcon/>
-      </ActionButton>
+      {onViewMore &&
+         <ActionButton onClick={onViewMore}>
+          <ArrowPathIcon/>
+        </ActionButton>
+      }
     </div>
   )
 }
@@ -262,12 +264,15 @@ function AssistantMessage({summary, results, loading, anchorRef} : {summary?: st
   )
 }
 
-function QueryMessage({query} : {query: string}) {
+function QueryMessage({query, page=0} : {query: string; page?: number}) {
   return (
     <div className="flex justify-end mb-6">
       <div className="max-w-2xl">
         <div className="bg-gray-900 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
-          <p className="text-sm leading-relaxed whitespace-pre-line">{query}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-line">
+            {page > 0 && <span className='italic text-gray-500 mr-1'>Find more:</span>}
+            {query}
+          </p>
         </div>
       </div>
     </div>
@@ -275,13 +280,15 @@ function QueryMessage({query} : {query: string}) {
 }
 
 
-function ChatEntry({index, query, loading, decontextualizedQuery, summary, results, anchorRef} : {
-  index: number; query: string; loading: boolean; decontextualizedQuery?: string | null; summary?: string | null; results: NlwebResult[]; anchorRef?: RefObject<HTMLDivElement>
+function ChatEntry({index, query, loading, decontextualizedQuery, summary, results, loadMore, page=0, maxPages=1, anchorRef} : {
+  index: number; query: string; loading: boolean; decontextualizedQuery?: string | null; summary?: string | null; results: NlwebResult[]; loadMore?: null | (() => void); anchorRef?: RefObject<HTMLDivElement>;
+  page?: number;
+  maxPages?: number;
 }) {
   return (
      <div key={`${query}-${index}`}>
-      {index > 0 ? <QueryMessage query={query}/> : null}
-      {index > 0 ? <SearchingFor streaming={loading} query={decontextualizedQuery}/> : null}
+      {index > 0 ? <QueryMessage query={query} page={page}/> : null}
+      {index > 0 ? <SearchingFor page={page} maxPages={maxPages} streaming={loading} query={decontextualizedQuery}/> : null}
       {(results.length > 0 || loading) ?
         <AssistantMessage
           anchorRef={anchorRef}
@@ -293,13 +300,11 @@ function ChatEntry({index, query, loading, decontextualizedQuery, summary, resul
           No results found
         </div>
       }
-      {!loading && 
+      {!loading &&
         <div className='mt-2 mb-6'>
           <AssistantMessageActions 
             content={summary || ''}
-            onViewMore={() => {
-              console.log('Requesting to view more!');
-            }}
+            onViewMore={page + 1 < maxPages ? loadMore : null}
           />
         </div>
       }
@@ -307,7 +312,7 @@ function ChatEntry({index, query, loading, decontextualizedQuery, summary, resul
   )
 }
 
-function ChatResults({nlweb, results, anchorRef} : {nlweb: NLWebSearchState; results: QueryResultSet[]; anchorRef:  RefObject<HTMLDivElement>}) {
+function ChatResults({nlweb, results, loadMore, anchorRef, maxPages=1} : {nlweb: NLWebSearchState; results: QueryResultSet[]; loadMore: (query: string, page: number) => void; anchorRef:  RefObject<HTMLDivElement>; maxPages?: number}) {
   return (
     <div className="space-y-4 py-6">
       {results.map((r, idx) =>
@@ -320,6 +325,9 @@ function ChatResults({nlweb, results, anchorRef} : {nlweb: NLWebSearchState; res
             results={r.response.results}
             summary={r.response.summary}
             decontextualizedQuery={r.response.decontextualizedQuery}
+            loadMore={() => loadMore(r.query as string, (r.page || 0) + 1)}
+            page={r.page || 0}
+            maxPages={maxPages}
           />
       )}
       {nlweb.query && (
@@ -332,6 +340,9 @@ function ChatResults({nlweb, results, anchorRef} : {nlweb: NLWebSearchState; res
           decontextualizedQuery={nlweb.decontextualizedQuery}
           loading={nlweb.loading}
           anchorRef={anchorRef}
+          loadMore={() => loadMore(nlweb.query as string, (nlweb.page || 0) + 1)}
+          page={nlweb.page || 0}
+          maxPages={maxPages}
         />
       )}
     </div>
@@ -342,6 +353,7 @@ function ChatResults({nlweb, results, anchorRef} : {nlweb: NLWebSearchState; res
 export function ChatSearch({
   results, addResult, startSession, endSession,
   nlweb, children, sidebar, sessionId= "NLWEB_DEFAULT_SESSION",
+  maxPages = 1,
 } : {
   sessionId?: string
   results: QueryResultSet[],
@@ -349,7 +361,8 @@ export function ChatSearch({
   startSession: (query: string) => Promise<string> | void;
   endSession: () => void;
   nlweb: NLWeb; children?: ReactNode
-  sidebar?: ReactNode
+  sidebar?: ReactNode;
+  maxPages?: number;
 }) {
   const { containerRef: chatRef, anchorRef } = useAutoScroll<HTMLDivElement>([nlweb.query])
   const [searchOpen, setSearchOpen] = useState(results.length > 0);
@@ -361,7 +374,7 @@ export function ChatSearch({
   }
   async function handleSearch(query: string, isRoot: boolean) {
     let response: SearchResponse;
-    let sId:string|null = sessionId;
+    let sId:string = sessionId;
     if (isRoot) {
       sId = await startSession(query) || sessionId;
       setSearchOpen(true);
@@ -379,6 +392,15 @@ export function ChatSearch({
       const result = {query: query, response: response, sessionId: sId}
       await addResult(result)
     } 
+  }
+  async function loadMore(query: string, newPage: number) {
+    console.log("Retrieving page", newPage);
+    const response = await nlweb.search({
+      query: query,
+      conversationHistory: results.map(r => r.query),
+      page: newPage
+    });
+    await addResult({query: query, response: response, sessionId: sessionId, page: newPage})
   }
   useEffect(() => {
     if (results.length > 0 && !searchOpen) {
@@ -415,7 +437,9 @@ export function ChatSearch({
                     <ChatResults
                       nlweb={nlweb}
                       results={results}
+                      loadMore={loadMore}
                       anchorRef={anchorRef}
+                      maxPages={maxPages}
                     />
                   </div>
                 </div>

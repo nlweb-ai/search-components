@@ -1,6 +1,6 @@
 {
   "name": "@nlweb-ai/search-components",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "React component library for search interfaces",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

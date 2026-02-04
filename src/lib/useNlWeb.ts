@@ -19,6 +19,7 @@ interface NLWebError {
  */
 export interface NLWebSearchState {
     results: NlwebResult[];
+    page?: number;
     streamingIndex: number;
     summary?: string;
     decontextualizedQuery?: string;
@@ -43,6 +44,7 @@ export interface NLWebSearchParams {
     userId?: string;
     remember?: boolean;
     conversationHistory?: string[];
+    page?: number;
 }
 
 /**
@@ -65,6 +67,8 @@ export interface V054Request {
             id: string;
         };
         remember?: boolean;
+        page?: number;
+        pages?: number;
     };
     context?: {
         '@type': 'ConversationalContext';
@@ -79,6 +83,7 @@ export interface UseNlWebConfig {
     endpoint: string;
     site: string;
     maxResults?: number;
+    pages?: number;
 }
 
 
@@ -89,7 +94,7 @@ export interface SearchResponse {
     rawLogs?: object[]
 }
 
-export function convertParamsToRequest(params: NLWebSearchParams, site: string, maxResults: number): V054Request {
+export function convertParamsToRequest(params: NLWebSearchParams, site: string, maxResults: number, pages: number): V054Request {
     const v054Request: V054Request = {
         query: {
             text: params.query,
@@ -103,9 +108,11 @@ export function convertParamsToRequest(params: NLWebSearchParams, site: string, 
         },
         meta: {
             api_version: '0.54',
+            pages: pages,
+            page: params.page || 0
         },
     };
-
+    
     // Add user metadata if provided
     if (params.userId) {
         v054Request.meta.user = {
@@ -136,7 +143,7 @@ export function convertParamsToRequest(params: NLWebSearchParams, site: string, 
  * @returns Search state and search function
  */
 export function useNlWeb(config: UseNlWebConfig):NLWeb {
-    const { endpoint, site, maxResults = 9 } = config;
+    const { endpoint, site, maxResults = 9, pages=1 } = config;
 
     
     const [state, setState] = useState<NLWebSearchState>({
@@ -304,12 +311,13 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
             error: null,
             rawLogs: [],
             streamingIndex: streamingIndex,
+            page: params.page || 0,
             loading: true
         });
 
         try {
             // Build v0.54 request
-            const v054Request = convertParamsToRequest(params, site, maxResults)
+            const v054Request = convertParamsToRequest(params, site, maxResults, pages)
             // Send POST request to get streaming response
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -335,6 +343,7 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
                 decontextualizedQuery: results.decontextualizedQuery,
                 error: null,
                 query: query,
+                page: params.page,
                 streamingIndex: streamingIndex,
                 rawLogs: results.rawLogs,
                 loading: false

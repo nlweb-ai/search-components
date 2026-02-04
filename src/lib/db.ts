@@ -8,6 +8,7 @@ interface QueryResultSet {
   sessionId: string;
   query: string;
   response: SearchResponse;
+  page?: number;
 }
 
 interface Backend {

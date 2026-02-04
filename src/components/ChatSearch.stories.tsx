@@ -146,13 +146,15 @@ export const WithDebugTools: Story = {
  * 3. View AI-generated summary and results in the full-screen dialog
  * 4. Ask follow-up questions using the bottom search bar
  */
+const PAGES = 2;
 export const WithSearchHistory: Story = {
   render: (args) => {
     const [site, setSite] = useState<Site>(SITES[0]);
     const nlweb = useNlWeb({
       endpoint: PROD_ENDPOINT,
       site: site.url,
-      maxResults: MAX_ITEMS
+      maxResults: MAX_ITEMS,
+      pages: PAGES
     });
     const localSessions = useSearchSessions();
     const [sessionId, setSessionId] = useState<string>(crypto.randomUUID());
@@ -193,6 +195,7 @@ export const WithSearchHistory: Story = {
 
             <ChatSearch
               sessionId={sessionId}
+              maxPages={PAGES}
               startSession={startSearch}
               endSession={endSearch}
               results={sessionResults}

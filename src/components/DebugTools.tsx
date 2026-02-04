@@ -16,7 +16,8 @@ function translateResultsToNlWebRequests(
   streamingState: NLWebSearchState,
   results: QueryResultSet[],
   site: string,
-  maxResults: number = 50
+  maxResults: number = 50,
+  pages: number = 1
 ): NlWebTurn[] {
   const turns: NlWebTurn[] = [];
 
@@ -31,7 +32,7 @@ function translateResultsToNlWebRequests(
     };
 
     // Convert to V054Request using the utility function
-    const request = convertParamsToRequest(params, site, maxResults);
+    const request = convertParamsToRequest(params, site, maxResults, pages);
 
     // Create the turn with the request and raw logs as response
     turns.push({
@@ -49,7 +50,7 @@ function translateResultsToNlWebRequests(
     };
 
     // Convert to V054Request
-    const streamingRequest = convertParamsToRequest(streamingParams, site, maxResults);
+    const streamingRequest = convertParamsToRequest(streamingParams, site, maxResults, pages);
 
     // Create the turn with the request and streaming raw logs as response
     turns.push({
@@ -97,7 +98,7 @@ function MessagesDialog({
   site,
   maxResults,
   streamingState,
-
+  pages=1
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -105,6 +106,7 @@ function MessagesDialog({
   streamingState: NLWebSearchState;
   site: string;
   maxResults: number;
+  pages?: number;
 }) {
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
@@ -133,7 +135,7 @@ function MessagesDialog({
 
             <TabPanels className="flex-1 overflow-y-auto">
               <TabPanel className="p-6">
-                <CodeBlock code={JSON.stringify(translateResultsToNlWebRequests(streamingState, results, site, maxResults), null, 2)}/>
+                <CodeBlock code={JSON.stringify(translateResultsToNlWebRequests(streamingState, results, site, maxResults, pages), null, 2)}/>
               </TabPanel>
             </TabPanels>
           </TabGroup>
@@ -143,7 +145,7 @@ function MessagesDialog({
   );
 }
 
-export function DebugTool({results, streamingState, site, maxResults} : {results: QueryResultSet[]; streamingState: NLWebSearchState; site: string; maxResults: number}) {
+export function DebugTool({results, streamingState, site, pages, maxResults} : {results: QueryResultSet[]; streamingState: NLWebSearchState; site: string; pages: number; maxResults: number}) {
   const [messagesOpen, setMessagesOpen] = useState(false);
   return (
     <>
@@ -161,6 +163,7 @@ export function DebugTool({results, streamingState, site, maxResults} : {results
         streamingState={streamingState}
         site={site}
         maxResults={maxResults}
+        pages={pages}
       />
     </>
   )
