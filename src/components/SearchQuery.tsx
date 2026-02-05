@@ -214,14 +214,14 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
               <ContentEditable
                 className={clsx(
                   "outline-none flex-1 m-0 rounded-md text-base px-4 py-3 text-gray-900",
-                  isMultiline ? "pl-4" : "pl-10",
+                  isMultiline ? "pl-4" : "pl-10 pr-12",
                   inputClassName,
                   loading && "opacity-50 cursor-not-allowed"
                 )}
                 aria-placeholder={placeholder}
                 placeholder={
                   <div className={clsx("absolute top-3 text-base text-gray-400 pointer-events-none select-none",
-                    isMultiline ? "left-4" : "left-10"
+                    isMultiline ? "left-4" : "left-10 truncate right-10"
 
                   )}>
                     {placeholder}

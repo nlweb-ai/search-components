@@ -410,7 +410,7 @@ export function ChatSearch({
   const rootQuery = results.length > 0 ? results[0].query : nlweb.query;
   return (
     <div>
-      <div className="mb-6 h-12 relative z-30">
+      <div className="mb-6 min-w-50 max-h-12 relative z-30">
         <SearchQuery loading={nlweb.loading} handleSearch={(q) => handleSearch(q, true)}/>
       </div>
       <Dialog className={'relative z-50'} open={searchOpen} onClose={closeSearch}>
