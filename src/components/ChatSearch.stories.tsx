@@ -15,7 +15,6 @@ const SITES:Site[] = [
   {url: 'aajtak.in'}
 ]
 const PROD_ENDPOINT = "https://internal-testing.nlweb.ai/ask";
-const MAX_ITEMS = 10; 
 
 
 /**
@@ -57,7 +56,8 @@ export const Default: Story = {
     const config = {
       endpoint: PROD_ENDPOINT,
       site: site.url,
-      maxResults: MAX_ITEMS
+      maxResults: 9,
+      numRetrievalResults: 50
     }
     const nlweb = useNlWeb(config);
     return (
@@ -104,7 +104,8 @@ export const WithDebugTools: Story = {
     const config = {
       endpoint: PROD_ENDPOINT,
       site: site.url,
-      maxResults: 9
+      maxResults: 9,
+      numRetrievalResults: 50
     }
     const nlweb = useNlWeb(config);
     return (
