@@ -322,7 +322,7 @@ function ChatResults(
   {nlweb: NLWebSearchState; config: UseNlWebConfig; searches: QueryResultSet[]; addResults: (id: string, results: NlwebResult[]) => Promise<void>;
  anchorRef:  RefObject<HTMLDivElement>;}
 ) {
-  const combinedStreamedResults = searches.length - 1 == nlweb.streamingIndex ?
+  const combinedStreamedResults = searches.length - 1 == nlweb.streamingIndex && searches[nlweb.streamingIndex]?.response ?
     [...nlweb.results, ...searches[nlweb.streamingIndex].response.results.slice(nlweb.results.length)] :
     nlweb.results;
   return (
