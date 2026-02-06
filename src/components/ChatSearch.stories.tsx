@@ -52,21 +52,26 @@ type Story = StoryObj<typeof ChatSearch>;
  */
 export const Default: Story = {
   render: (args) => {
-    const [results, setResults] = useState<QueryResultSet[]>([]);
+    const [searches, setSearches] = useState<QueryResultSet[]>([]);
     const [site, setSite] = useState<Site>(SITES[0]);
-    const nlweb = useNlWeb({
+    const config = {
       endpoint: PROD_ENDPOINT,
       site: site.url,
       maxResults: MAX_ITEMS
-    });
+    }
+    const nlweb = useNlWeb(config);
     return (
       <div className="p-8 max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Recipe Search</h1>
         <ChatSearch
-          results={results}
-          startSession={() => setResults([])}
-          endSession={() => setResults([])}
-          addResult={r => setResults(curr => [...curr, r])}
+          searches={searches}
+          startSession={() => setSearches([])}
+          endSession={() => setSearches([])}
+          addSearch={r => setSearches(curr => [...curr, r])}
+          addResults={async (id, r) => {
+            setSearches(curr => curr.map((c, i) => `${i}` == id ? ({...c, response: {...c.response, results: [...c.response.results, ...r]}}) : c))
+          }}
+          config={config}
           nlweb={nlweb}
         />
         <SiteDropdown 
