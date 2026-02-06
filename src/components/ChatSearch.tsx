@@ -1,7 +1,7 @@
 import { RefObject, ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
 import { NLWeb, useNlWeb, UseNlWebConfig, NLWebSearchState, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
-import { XMarkIcon, NewspaperIcon, Square2StackIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/solid'
+import { XMarkIcon, NewspaperIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
 import { getThumbnailCandidates, isMovieResult, NlwebResult } from '../lib/parseSchema';
 import { shortQuantity, intersperse } from '../lib/util';
@@ -200,18 +200,21 @@ function SearchingFor({query, streaming} : {query?: string | null; streaming?: b
 }
 
 
-function ActionButton({children, onClick} : {children: ReactNode; onClick?: () => void}) {
+function PageButton({page, onClick, activePage, disabled=true} : {page: number; activePage: number; onClick: () => void; disabled?: boolean}) {
   return (
     <Button
+      disabled={disabled}
       onClick={onClick}
-      className="p-2 rounded-md transition-colors duration-200 text-gray-500 hover:bg-gray-100 flex items-center justify-center"
+      className={clsx("text-sm p-2 size-6 rounded-md transition-colors duration-200 hover:bg-gray-100 flex items-center justify-center", 
+        page == activePage ? 'text-gray-700' : 'text-gray-400',
+        disabled ? 'opacity-50 pointer-events-none' : ''
+      )}
     >
-      <div className="size-4">
-        {children}
-      </div>
+      {page + 1}
     </Button>
   )
 }
+
 
 
 function AssistantMessage({summary, results, loading, addResults, followUpQuery, config, anchorRef} : {summary?: string | null; results: NlwebResult[]; addResults: (results: NlwebResult[]) => Promise<void>; followUpQuery: string; config: UseNlWebConfig;  loading?: boolean; anchorRef?: RefObject<HTMLDivElement>}) {
@@ -256,18 +259,17 @@ function AssistantMessage({summary, results, loading, addResults, followUpQuery,
             )}
           </div>
         </div>
-        <div className='flex mt-4 -mx-2 items-center gap-2 text-sm'>
+        <div className='flex mt-4 -mx-2 items-center gap-2'>
           {pageRange.map(p => 
-            results.length > (p - 1) * maxResults &&
+            results.length >= p * maxResults &&
             (p + 1) * maxResults < numRetrievalResults &&
-            <Button
+            <PageButton
               onClick={() => viewMoreResults(p)}
-              className={clsx("p-2 size-6 rounded-md transition-colors duration-200 hover:bg-gray-100 flex items-center justify-center", 
-                page == p ? 'text-gray-800' : 'text-gray-400'
-              )}
-            >
-              {p + 1}
-            </Button>
+              page={p}
+              activePage={page}
+              key={p}
+              disabled={loading}
+            />
           )}
         </div>
       </div>
@@ -373,7 +375,7 @@ export function ChatSearch({
   children?: ReactNode
   sidebar?: ReactNode;
 }) {
-  const { containerRef: chatRef, anchorRef } = useAutoScroll<HTMLDivElement>([nlweb.query])
+  const { anchorRef } = useAutoScroll<HTMLDivElement>([nlweb.query])
   const [searchOpen, setSearchOpen] = useState(searches.length > 0);
   function closeSearch() {
     setSearchOpen(false);
@@ -423,7 +425,7 @@ export function ChatSearch({
             <div className='flex-1 flex flex-col overflow-hidden'>
               {children}
               <div className='relative flex-1 overflow-hidden flex flex-col'>
-                <div ref={chatRef} className='flex-1 overflow-y-auto p-4 pt-16 pb-24'>
+                <div className='flex-1 overflow-y-auto p-4 pt-16 pb-24'>
                   <div className='max-w-7xl mx-auto'>
                     <div className="mb-6 max-w-xl mx-auto">
                       <SearchQuery 

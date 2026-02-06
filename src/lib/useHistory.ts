@@ -35,7 +35,7 @@ export function useSearchSessions(): {sessions: SearchSession[]; startSession: (
 
 
 export interface SearchSessionManager {
-  results: QueryResultSet[];
+  searches: QueryResultSet[];
   addSearch: (data: QueryResultSet) => Promise<void>;
   addResults: (id: string, results: NlwebResult[]) => Promise<void>;
 }
@@ -72,7 +72,7 @@ export function useSearchSession(sessionId: string | null): SearchSessionManager
   }
 
   return {
-    results: queryResults,
+    searches: queryResults,
     addSearch,
     addResults
   }

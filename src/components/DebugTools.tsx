@@ -4,7 +4,7 @@ import {BugAntIcon} from '@heroicons/react/24/solid'
 import {useState} from 'react';
 import {Dialog, DialogPanel, Button, Tab, TabGroup, TabList, TabPanel, TabPanels} from '@headlessui/react';
 import {clsx} from 'clsx';
-import { NLWebSearchParams, NLWebSearchState, V054Request, convertParamsToRequest } from '../lib/useNlWeb';
+import { NLWebSearchParams, NLWebSearchState, UseNlWebConfig, V054Request, convertParamsToRequest } from '../lib/useNlWeb';
 
 
 interface NlWebTurn {
@@ -15,9 +15,7 @@ interface NlWebTurn {
 function translateResultsToNlWebRequests(
   streamingState: NLWebSearchState,
   results: QueryResultSet[],
-  site: string,
-  maxResults: number = 50,
-  pages: number = 1
+  config: UseNlWebConfig
 ): NlWebTurn[] {
   const turns: NlWebTurn[] = [];
 
@@ -32,7 +30,7 @@ function translateResultsToNlWebRequests(
     };
 
     // Convert to V054Request using the utility function
-    const request = convertParamsToRequest(params, site, maxResults, pages);
+    const request = convertParamsToRequest(params, config.site, config.numRetrievalResults,  config.maxResults);
 
     // Create the turn with the request and raw logs as response
     turns.push({
@@ -50,7 +48,7 @@ function translateResultsToNlWebRequests(
     };
 
     // Convert to V054Request
-    const streamingRequest = convertParamsToRequest(streamingParams, site, maxResults, pages);
+    const streamingRequest = convertParamsToRequest(streamingParams, config.site, config.numRetrievalResults, config.maxResults);
 
     // Create the turn with the request and streaming raw logs as response
     turns.push({
@@ -94,19 +92,15 @@ function CodeBlock({code} : {code: string}) {
 function MessagesDialog({
   isOpen,
   onClose,
-  results,
-  site,
-  maxResults,
+  searches,
   streamingState,
-  pages=1
+  config,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  results: QueryResultSet[];
+  searches: QueryResultSet[];
   streamingState: NLWebSearchState;
-  site: string;
-  maxResults: number;
-  pages?: number;
+  config: UseNlWebConfig;
 }) {
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
@@ -135,7 +129,7 @@ function MessagesDialog({
 
             <TabPanels className="flex-1 overflow-y-auto">
               <TabPanel className="p-6">
-                <CodeBlock code={JSON.stringify(translateResultsToNlWebRequests(streamingState, results, site, maxResults, pages), null, 2)}/>
+                <CodeBlock code={JSON.stringify(translateResultsToNlWebRequests(streamingState, searches, config), null, 2)}/>
               </TabPanel>
             </TabPanels>
           </TabGroup>
@@ -145,7 +139,7 @@ function MessagesDialog({
   );
 }
 
-export function DebugTool({results, streamingState, site, pages, maxResults} : {results: QueryResultSet[]; streamingState: NLWebSearchState; site: string; pages: number; maxResults: number}) {
+export function DebugTool({searches, streamingState, config} : {searches: QueryResultSet[]; streamingState: NLWebSearchState; config: UseNlWebConfig}) {
   const [messagesOpen, setMessagesOpen] = useState(false);
   return (
     <>
@@ -159,11 +153,9 @@ export function DebugTool({results, streamingState, site, pages, maxResults} : {
       <MessagesDialog
         isOpen={messagesOpen}
         onClose={() => setMessagesOpen(false)}
-        results={results}
+        searches={searches}
         streamingState={streamingState}
-        site={site}
-        maxResults={maxResults}
-        pages={pages}
+        config={config}
       />
     </>
   )

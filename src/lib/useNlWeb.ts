@@ -83,7 +83,6 @@ export interface UseNlWebConfig {
     site: string;
     maxResults?: number;
     numRetrievalResults?: number;
-    pages?: number;
 }
 
 
@@ -94,7 +93,7 @@ export interface SearchResponse {
     rawLogs?: object[]
 }
 
-export function convertParamsToRequest(params: NLWebSearchParams, site: string, numRetrievalResults: number, maxResults: number): V054Request {
+export function convertParamsToRequest(params: NLWebSearchParams, site: string, numRetrievalResults: number=50, maxResults: number=9): V054Request {
     const v054Request: V054Request = {
         query: {
             text: params.query,

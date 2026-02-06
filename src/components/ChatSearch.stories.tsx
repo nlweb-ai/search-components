@@ -94,13 +94,14 @@ export const Default: Story = {
  */
 export const WithDebugTools: Story = {
   render: (args) => {
-    const [results, setResults] = useState<QueryResultSet[]>([])
+    const [searches, setSearches] = useState<QueryResultSet[]>([])
     const [site, setSite] = useState<Site>(SITES[0]);
-    const nlweb = useNlWeb({
+    const config = {
       endpoint: PROD_ENDPOINT,
       site: site.url,
-      maxResults: MAX_ITEMS
-    });
+      maxResults: 9
+    }
+    const nlweb = useNlWeb(config);
     return (
       <div className="p-8 max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Recipe Search + Debugger</h1>
@@ -108,18 +109,21 @@ export const WithDebugTools: Story = {
           Use the debugger to see raw backend responses, and data that is dropped.
         </div>
         <ChatSearch
-          startSession={() => setResults([])}
-          endSession={() => setResults([])}
-          results={results}
-          addResult={r => setResults(curr => [...curr, r])}
+          startSession={() => setSearches([])}
+          endSession={() => setSearches([])}
+          searches={searches}
+          addSearch={r => setSearches(curr => [...curr, {...r, id: `${searches.length}`}])}
+          addResults={async (id, r) => {
+            setSearches(curr => curr.map((c, i) => `${i}` == id ? ({...c, response: {...c.response, results: [...c.response.results, ...r]}}) : c))
+          }}
+          config={config}
           nlweb={nlweb}
         >
           <div className='fixed left-4 top-12 z-50'>
             <DebugTool
-              site={site.url}
-              maxResults={MAX_ITEMS}
               streamingState={nlweb}
-              results={results}
+              searches={searches}
+              config={config}
             />
           </div>
         </ChatSearch>
@@ -150,15 +154,16 @@ const PAGES = 2;
 export const WithSearchHistory: Story = {
   render: (args) => {
     const [site, setSite] = useState<Site>(SITES[0]);
-    const nlweb = useNlWeb({
+    const nlwebConfig = {
       endpoint: PROD_ENDPOINT,
       site: site.url,
-      maxResults: MAX_ITEMS,
-      pages: PAGES
-    });
+      maxResults: 9,
+      numRetrievalResults: 50
+    }
+    const nlweb = useNlWeb(nlwebConfig);
     const localSessions = useSearchSessions();
     const [sessionId, setSessionId] = useState<string>(crypto.randomUUID());
-    const [sessionResults, addResult] = useSearchSession(sessionId);
+    const {searches, addSearch, addResults} = useSearchSession(sessionId);
     async function startSearch(query: string) {
       nlweb.clearResults();
       const newId = localSessions.sessions.some(s => s.sessionId === sessionId) ? crypto.randomUUID() : sessionId ;
@@ -195,11 +200,12 @@ export const WithSearchHistory: Story = {
 
             <ChatSearch
               sessionId={sessionId}
-              maxPages={PAGES}
               startSession={startSearch}
               endSession={endSearch}
-              results={sessionResults}
-              addResult={addResult}
+              searches={searches}
+              addSearch={addSearch}
+              addResults={addResults}
+              config={nlwebConfig}
               nlweb={nlweb}
               sidebar={<HistorySidebar
                 selected={sessionId}
