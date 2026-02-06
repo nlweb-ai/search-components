@@ -1,5 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type QueryResultSet, type Backend, type SearchSession } from './db';
+import { NlwebResult } from "./parseSchema";
 
 export type { QueryResultSet, Backend, SearchSession };
 export function useSearchSessions(): {sessions: SearchSession[]; startSession: (sessionId: string, query: string, backend: Backend) => Promise<void>; deleteSession: (sessionId: string) => Promise<void>} {
@@ -32,7 +33,13 @@ export function useSearchSessions(): {sessions: SearchSession[]; startSession: (
   }
 }
 
-export function useSearchSession(sessionId: string | null):[QueryResultSet[], (data: QueryResultSet) => Promise<void>] {
+
+export interface SearchSessionManager {
+  results: QueryResultSet[];
+  addSearch: (data: QueryResultSet) => Promise<void>;
+  addResults: (id: string, results: NlwebResult[]) => Promise<void>;
+}
+export function useSearchSession(sessionId: string | null): SearchSessionManager {
   const queryResults = useLiveQuery<QueryResultSet[]>(
     async () => {
       if (!sessionId) return [];
@@ -41,7 +48,7 @@ export function useSearchSession(sessionId: string | null):[QueryResultSet[], (d
     [sessionId]
   ) ?? [];
 
-  async function addResult(result: QueryResultSet) {
+  async function addSearch(result: QueryResultSet) {
     await db.transaction('rw', db.messages, db.sessions, async () => {
         db.sessions.update(result.sessionId, {
           updated: new Date()
@@ -50,5 +57,23 @@ export function useSearchSession(sessionId: string | null):[QueryResultSet[], (d
     })
   }
 
-  return [queryResults, addResult]
+  async function addResults(id: string, results: NlwebResult[]) {
+    await db.transaction('rw', db.messages, db.sessions, async () => {
+        const currMessage = await db.messages.get(id);
+        if (currMessage) {
+          db.sessions.update(currMessage.sessionId, {
+            updated: new Date()
+          })
+          db.messages.update(id, {...currMessage, response: {
+            ...currMessage.response, results: [...currMessage.response.results, ...results]
+          }}); 
+        }
+    })
+  }
+
+  return {
+    results: queryResults,
+    addSearch,
+    addResults
+  }
 }

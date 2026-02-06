@@ -1,5 +1,5 @@
 import { RefObject, ReactNode, useEffect, useState, ImgHTMLAttributes } from 'react';
-import { NLWeb, NLWebSearchState, SearchResponse} from '../lib/useNlWeb';
+import { NLWeb, useNlWeb, UseNlWebConfig, NLWebSearchState, SearchResponse} from '../lib/useNlWeb';
 import { Dialog, DialogPanel, Button } from '@headlessui/react'
 import { XMarkIcon, NewspaperIcon, Square2StackIcon, ArrowPathIcon, CheckIcon } from '@heroicons/react/24/solid'
 import { clsx } from 'clsx';
@@ -182,7 +182,7 @@ function SummaryCard({summary} : {summary? : string | null}) {
   )
 }
 
-function SearchingFor({query, streaming, page=0, maxPages=1} : {query?: string | null; streaming?: boolean; page?: number; maxPages?: number}) {
+function SearchingFor({query, streaming} : {query?: string | null; streaming?: boolean}) {
   return (
     <div className={clsx('text-gray-500 gap-1 flex items-center text-sm pb-2 px-2', streaming && 'shimmer')}>
       {query ? (
@@ -190,7 +190,7 @@ function SearchingFor({query, streaming, page=0, maxPages=1} : {query?: string |
           key={query}
           className='text-gray-800 overflow-ellipse'
         >
-          Searching for{page > 0 ? ` Page ${page + 1}/${maxPages}` : ""}: {query}
+          Searching for: {query}
         </span>
       ) : (
         "Working on it"
@@ -213,37 +213,34 @@ function ActionButton({children, onClick} : {children: ReactNode; onClick?: () =
   )
 }
 
-function AssistantMessageActions({content, onViewMore} : {content: string; onViewMore?: null | (() => void)}) {
-  const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      setTimeout(() => {
-        setCopied(false);
-      }, 1000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+function AssistantMessage({summary, results, loading, addResults, followUpQuery, config, anchorRef} : {summary?: string | null; results: NlwebResult[]; addResults: (results: NlwebResult[]) => Promise<void>; followUpQuery: string; config: UseNlWebConfig;  loading?: boolean; anchorRef?: RefObject<HTMLDivElement>}) {
+   // Create a local nlweb instance, to power pagination. 
+  const nlweb = useNlWeb(config);
+  // We dont want decontextualization to happen.
+  const maxResults = config.maxResults || 50;
+  const numRetrievalResults = config.numRetrievalResults || 50;
+  const pagesAvailable = Math.floor(numRetrievalResults / maxResults);
+  const [page, setPage] = useState(0);
+  const pageRange: number[] = Array.from({ length: pagesAvailable + 1 }, (_, index) => index);
+  async function viewMoreResults(pageNumber: number) {
+    setPage(pageNumber);
+    const offsetToFetch = pageNumber * maxResults;
+    if (results.length <= (offsetToFetch)) {
+      // Here, we explicitly set convo history to none so that we dont 
+      // decontexttualize the query again. 
+      const response = await nlweb.search({
+        query: followUpQuery,
+        conversationHistory: [],
+        resultOffset: offsetToFetch
+      });
+      await addResults(response.results);
     }
-  };
-
-  return (
-    <div className='flex items-center'>
-      <ActionButton onClick={handleCopy}>
-        {copied ? <CheckIcon className="text-green-600" /> : <Square2StackIcon/>}
-      </ActionButton>
-      {onViewMore &&
-         <ActionButton onClick={onViewMore}>
-          <ArrowPathIcon/>
-        </ActionButton>
-      }
-    </div>
-  )
-}
-
-function AssistantMessage({summary, results, loading, anchorRef} : {summary?: string | null; results: NlwebResult[]; loading?: boolean; anchorRef?: RefObject<HTMLDivElement>}) {
-  const skeletonCount = Math.max(0, 9 - results.length);
+  }
+  const pageOffset = page * maxResults;
+  const isStreamingPage = pageOffset == nlweb.resultOffset ;
+  const resultsOfPage = isStreamingPage ? nlweb.results : results.slice(pageOffset, (page + 1) * maxResults)
+  const skeletonCount = Math.max(0, 9 - resultsOfPage.length);
   return (
     <div className="flex justify-start">
       <div className="max-w-3xl flex-1 bg-gray-50 p-6 rounded-lg">
@@ -251,26 +248,39 @@ function AssistantMessage({summary, results, loading, anchorRef} : {summary?: st
           <SummaryCard summary={summary}/>
           <div ref={anchorRef}/>
           <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
-            {results.map((r, idx) =>
+            {resultsOfPage.map((r, idx) =>
               <ResultCard result={r} key={(r.url || r.name || idx) as string}/>
             )}
-            {loading && Array.from({ length: skeletonCount }).map((_, idx) =>
+            {(loading || (nlweb.loading && isStreamingPage)) && Array.from({ length: skeletonCount }).map((_, idx) =>
                 <ResultCardSkeleton key={`skeleton-${idx}`}/>
             )}
           </div>
+        </div>
+        <div className='flex mt-4 -mx-2 items-center gap-2 text-sm'>
+          {pageRange.map(p => 
+            results.length > (p - 1) * maxResults &&
+            (p + 1) * maxResults < numRetrievalResults &&
+            <Button
+              onClick={() => viewMoreResults(p)}
+              className={clsx("p-2 size-6 rounded-md transition-colors duration-200 hover:bg-gray-100 flex items-center justify-center", 
+                page == p ? 'text-gray-800' : 'text-gray-400'
+              )}
+            >
+              {p + 1}
+            </Button>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function QueryMessage({query, page=0} : {query: string; page?: number}) {
+function QueryMessage({query} : {query: string}) {
   return (
     <div className="flex justify-end mb-6">
       <div className="max-w-2xl">
         <div className="bg-gray-900 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
           <p className="text-sm leading-relaxed whitespace-pre-line">
-            {page > 0 && <span className='italic text-gray-500 mr-1'>Find more:</span>}
             {query}
           </p>
         </div>
@@ -280,42 +290,42 @@ function QueryMessage({query, page=0} : {query: string; page?: number}) {
 }
 
 
-function ChatEntry({index, query, loading, decontextualizedQuery, summary, results, loadMore, page=0, maxPages=1, anchorRef} : {
-  index: number; query: string; loading: boolean; decontextualizedQuery?: string | null; summary?: string | null; results: NlwebResult[]; loadMore?: null | (() => void); anchorRef?: RefObject<HTMLDivElement>;
-  page?: number;
-  maxPages?: number;
+function ChatEntry({index, query, loading, decontextualizedQuery, summary, results, config, addResults, anchorRef} : {
+  index: number; query: string; loading: boolean; decontextualizedQuery?: string | null; summary?: string | null; results: NlwebResult[]; config: UseNlWebConfig; addResults: (results: NlwebResult[]) => Promise<void>; anchorRef?: RefObject<HTMLDivElement>;
 }) {
   return (
      <div key={`${query}-${index}`}>
-      {index > 0 ? <QueryMessage query={query} page={page}/> : null}
-      {index > 0 ? <SearchingFor page={page} maxPages={maxPages} streaming={loading} query={decontextualizedQuery}/> : null}
+      {index > 0 ? <QueryMessage query={query}/> : null}
+      {index > 0 ? <SearchingFor streaming={loading} query={decontextualizedQuery}/> : null}
       {(results.length > 0 || loading) ?
         <AssistantMessage
           anchorRef={anchorRef}
           summary={summary}
           results={results}
           loading={loading}
+          followUpQuery={decontextualizedQuery || query}
+          addResults={addResults}
+          config={config}
         /> :
         <div className='flex max-w-3xl text-base text-gray-500 justify-start bg-gray-50 p-6 rounded-lg'>
           No results found
-        </div>
-      }
-      {!loading &&
-        <div className='mt-2 mb-6'>
-          <AssistantMessageActions 
-            content={summary || ''}
-            onViewMore={page + 1 < maxPages ? loadMore : null}
-          />
         </div>
       }
     </div>
   )
 }
 
-function ChatResults({nlweb, results, loadMore, anchorRef, maxPages=1} : {nlweb: NLWebSearchState; results: QueryResultSet[]; loadMore: (query: string, page: number) => void; anchorRef:  RefObject<HTMLDivElement>; maxPages?: number}) {
+function ChatResults(
+  {nlweb, config, searches, addResults, anchorRef} :
+  {nlweb: NLWebSearchState; config: UseNlWebConfig; searches: QueryResultSet[]; addResults: (id: string, results: NlwebResult[]) => Promise<void>;
+ anchorRef:  RefObject<HTMLDivElement>;}
+) {
+  const combinedStreamedResults = searches.length - 1 == nlweb.streamingIndex ?
+    [...nlweb.results, ...searches[nlweb.streamingIndex].response.results.slice(nlweb.results.length)] :
+    nlweb.results;
   return (
     <div className="space-y-4 py-6">
-      {results.map((r, idx) =>
+      {searches.map((r, idx) =>
         idx != nlweb.streamingIndex && 
           <ChatEntry
             key={`${r.query}-${idx}`}
@@ -325,9 +335,8 @@ function ChatResults({nlweb, results, loadMore, anchorRef, maxPages=1} : {nlweb:
             results={r.response.results}
             summary={r.response.summary}
             decontextualizedQuery={r.response.decontextualizedQuery}
-            loadMore={() => loadMore(r.query as string, (r.page || 0) + 1)}
-            page={r.page || 0}
-            maxPages={maxPages}
+            config={config}
+            addResults={(results) => addResults(r.id || '', results)}
           />
       )}
       {nlweb.query && (
@@ -335,14 +344,13 @@ function ChatResults({nlweb, results, loadMore, anchorRef, maxPages=1} : {nlweb:
           key={`${nlweb.query}-${nlweb.streamingIndex}`}
           index={nlweb.streamingIndex}
           query={nlweb.query}
-          results={nlweb.results}
+          results={combinedStreamedResults}
           summary={nlweb.summary}
           decontextualizedQuery={nlweb.decontextualizedQuery}
           loading={nlweb.loading}
           anchorRef={anchorRef}
-          loadMore={() => loadMore(nlweb.query as string, (nlweb.page || 0) + 1)}
-          page={nlweb.page || 0}
-          maxPages={maxPages}
+          config={config}
+          addResults={(r) => addResults(searches[nlweb.streamingIndex].id || '', r)}
         />
       )}
     </div>
@@ -351,21 +359,22 @@ function ChatResults({nlweb, results, loadMore, anchorRef, maxPages=1} : {nlweb:
 
 
 export function ChatSearch({
-  results, addResult, startSession, endSession,
-  nlweb, children, sidebar, sessionId= "NLWEB_DEFAULT_SESSION",
-  maxPages = 1,
+  searches, addSearch, addResults, startSession, endSession,
+  nlweb, config, children, sidebar, sessionId= "NLWEB_DEFAULT_SESSION",
 } : {
   sessionId?: string
-  results: QueryResultSet[],
-  addResult: (r: QueryResultSet) => Promise<void> | void;
+  searches: QueryResultSet[],
+  addSearch: (r: QueryResultSet) => Promise<void> | void;
+  addResults: (id: string, results: NlwebResult[]) => Promise<void>;
   startSession: (query: string) => Promise<string> | void;
   endSession: () => void;
-  nlweb: NLWeb; children?: ReactNode
+  nlweb: NLWeb; 
+  config: UseNlWebConfig;
+  children?: ReactNode
   sidebar?: ReactNode;
-  maxPages?: number;
 }) {
   const { containerRef: chatRef, anchorRef } = useAutoScroll<HTMLDivElement>([nlweb.query])
-  const [searchOpen, setSearchOpen] = useState(results.length > 0);
+  const [searchOpen, setSearchOpen] = useState(searches.length > 0);
   function closeSearch() {
     setSearchOpen(false);
     if (endSession) {
@@ -384,30 +393,21 @@ export function ChatSearch({
     } else {
       response = await nlweb.search({
         query: query,
-        conversationHistory: results.map(r => r.query)
+        conversationHistory: searches.map(r => r.query)
       })
     }
     // Add to store, in the correct way
     if (sId) {
-      const result = {query: query, response: response, sessionId: sId}
-      await addResult(result)
+      const search = {query: query, response: response, sessionId: sId}
+      await addSearch(search)
     } 
   }
-  async function loadMore(query: string, newPage: number) {
-    console.log("Retrieving page", newPage);
-    const response = await nlweb.search({
-      query: query,
-      conversationHistory: results.map(r => r.query),
-      page: newPage
-    });
-    await addResult({query: query, response: response, sessionId: sessionId, page: newPage})
-  }
   useEffect(() => {
-    if (results.length > 0 && !searchOpen) {
+    if (searches.length > 0 && !searchOpen) {
       setSearchOpen(true);
     }
-  }, [results])
-  const rootQuery = results.length > 0 ? results[0].query : nlweb.query;
+  }, [searches])
+  const rootQuery = searches.length > 0 ? searches[0].query : nlweb.query;
   return (
     <div>
       <div className="mb-6 min-w-50 max-h-12 relative z-30">
@@ -436,10 +436,10 @@ export function ChatSearch({
                     </div>
                     <ChatResults
                       nlweb={nlweb}
-                      results={results}
-                      loadMore={loadMore}
+                      searches={searches}
+                      addResults={addResults}
+                      config={config}
                       anchorRef={anchorRef}
-                      maxPages={maxPages}
                     />
                   </div>
                 </div>

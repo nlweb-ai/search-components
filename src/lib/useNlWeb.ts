@@ -19,7 +19,7 @@ interface NLWebError {
  */
 export interface NLWebSearchState {
     results: NlwebResult[];
-    page?: number;
+    resultOffset?: number;
     streamingIndex: number;
     summary?: string;
     decontextualizedQuery?: string;
@@ -39,12 +39,11 @@ export interface NLWeb extends NLWebSearchState {
  */
 export interface NLWebSearchParams {
     query: string;
-    numResults?: number;
     mode?: 'list' | 'list,summarize';
     userId?: string;
     remember?: boolean;
     conversationHistory?: string[];
-    page?: number;
+    resultOffset?: number;
 }
 
 /**
@@ -54,7 +53,8 @@ export interface V054Request {
     query: {
         text: string;
         site: string;
-        num_results: number;
+        max_results: number; // Ranked results
+        num_results: number; // Retrieval results
     };
     prefer: {
         streaming: boolean;
@@ -67,8 +67,7 @@ export interface V054Request {
             id: string;
         };
         remember?: boolean;
-        page?: number;
-        pages?: number;
+        start_num?: number;
     };
     context?: {
         '@type': 'ConversationalContext';
@@ -83,6 +82,7 @@ export interface UseNlWebConfig {
     endpoint: string;
     site: string;
     maxResults?: number;
+    numRetrievalResults?: number;
     pages?: number;
 }
 
@@ -94,12 +94,13 @@ export interface SearchResponse {
     rawLogs?: object[]
 }
 
-export function convertParamsToRequest(params: NLWebSearchParams, site: string, maxResults: number, pages: number): V054Request {
+export function convertParamsToRequest(params: NLWebSearchParams, site: string, numRetrievalResults: number, maxResults: number): V054Request {
     const v054Request: V054Request = {
         query: {
             text: params.query,
             site: site,
-            num_results: params.numResults || maxResults,
+            max_results: maxResults,
+            num_results: numRetrievalResults,
         },
         prefer: {
             streaming: true,
@@ -108,8 +109,7 @@ export function convertParamsToRequest(params: NLWebSearchParams, site: string, 
         },
         meta: {
             api_version: '0.54',
-            pages: pages,
-            page: params.page || 0
+            start_num: params.resultOffset || 0
         },
     };
     
@@ -143,7 +143,7 @@ export function convertParamsToRequest(params: NLWebSearchParams, site: string, 
  * @returns Search state and search function
  */
 export function useNlWeb(config: UseNlWebConfig):NLWeb {
-    const { endpoint, site, maxResults = 9, pages=1 } = config;
+    const { endpoint, site, maxResults = 9, numRetrievalResults=50 } = config;
 
     
     const [state, setState] = useState<NLWebSearchState>({
@@ -311,13 +311,13 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
             error: null,
             rawLogs: [],
             streamingIndex: streamingIndex,
-            page: params.page || 0,
+            resultOffset: params.resultOffset || 0,
             loading: true
         });
 
         try {
             // Build v0.54 request
-            const v054Request = convertParamsToRequest(params, site, maxResults, pages)
+            const v054Request = convertParamsToRequest(params, site, numRetrievalResults, maxResults)
             // Send POST request to get streaming response
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -343,7 +343,7 @@ export function useNlWeb(config: UseNlWebConfig):NLWeb {
                 decontextualizedQuery: results.decontextualizedQuery,
                 error: null,
                 query: query,
-                page: params.page,
+                resultOffset: params.resultOffset,
                 streamingIndex: streamingIndex,
                 rawLogs: results.rawLogs,
                 loading: false
