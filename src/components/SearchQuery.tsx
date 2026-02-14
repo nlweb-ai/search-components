@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button } from '@headlessui/react'
-import { MagnifyingGlassIcon, ArrowRightIcon } from '@heroicons/react/24/solid'
+import { Button } from '@headlessui/react';
+import { MagnifyingGlassIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
 import { clsx } from 'clsx';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { PlainTextPlugin } from '@lexical/react/LexicalPlainTextPlugin';
@@ -8,11 +8,23 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { useLexicalIsTextContentEmpty } from '@lexical/react/useLexicalIsTextContentEmpty';
-import { $getRoot, COMMAND_PRIORITY_HIGH, KEY_ENTER_COMMAND, $createParagraphNode, $createTextNode } from 'lexical';
+import {
+  $getRoot,
+  COMMAND_PRIORITY_HIGH,
+  KEY_ENTER_COMMAND,
+  $createParagraphNode,
+  $createTextNode,
+} from 'lexical';
 import type { LexicalEditor } from 'lexical';
 
 // Plugin to handle Enter key vs Shift+Enter
-function EnterKeyPlugin({ onSubmit, disabled }: { onSubmit: () => void; disabled: boolean }) {
+function EnterKeyPlugin({
+  onSubmit,
+  disabled,
+}: {
+  onSubmit: () => void;
+  disabled: boolean;
+}) {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -61,7 +73,11 @@ function InitialValuePlugin({ initQuery }: { initQuery?: string | null }) {
 }
 
 // Plugin to handle focus state
-function FocusPlugin({ onFocusChange }: { onFocusChange: (focused: boolean) => void }) {
+function FocusPlugin({
+  onFocusChange,
+}: {
+  onFocusChange: (focused: boolean) => void;
+}) {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -84,7 +100,7 @@ function FocusPlugin({ onFocusChange }: { onFocusChange: (focused: boolean) => v
 function EditorStatePlugin({
   editorRef,
   onEmptyChange,
-  onMultilineChange
+  onMultilineChange,
 }: {
   editorRef: React.MutableRefObject<LexicalEditor | null>;
   onEmptyChange: (isEmpty: boolean) => void;
@@ -128,7 +144,10 @@ function EditorStatePlugin({
       for (const entry of entries) {
         const currentHeight = entry.contentRect.height;
         // Only set to true when height increases (text wraps)
-        if (initialHeightRef.current !== null && currentHeight >= initialHeightRef.current) {
+        if (
+          initialHeightRef.current !== null &&
+          currentHeight >= initialHeightRef.current
+        ) {
           if (!isMultilineRef.current) {
             isMultilineRef.current = true;
             onMultilineChange(true);
@@ -148,7 +167,21 @@ function EditorStatePlugin({
   return null;
 }
 
-export function SearchQuery({initQuery, className, inputClassName, loading, handleSearch, placeholder="Ask anything..."} : {initQuery?: string | null; className?: string; inputClassName?: string; placeholder?: string; loading: boolean; handleSearch: (query: string) => Promise<void>}) {
+export function SearchQuery({
+  initQuery,
+  className,
+  inputClassName,
+  loading,
+  handleSearch,
+  placeholder = 'Ask anything...',
+}: {
+  initQuery?: string | null;
+  className?: string;
+  inputClassName?: string;
+  placeholder?: string;
+  loading: boolean;
+  handleSearch: (query: string) => Promise<unknown>;
+}) {
   const [isFocused, setIsFocused] = useState(false);
   const [isMultiline, setIsMultiline] = useState(false);
   const [hasText, setHasText] = useState(!!initQuery);
@@ -194,36 +227,43 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <div
-        className={clsx(`flex relative rounded-lg border transition-all duration-200`,
+        className={clsx(
+          `flex relative rounded-lg border transition-all duration-200`,
           isFocused
             ? 'border-gray-400 shadow-md ring-2 ring-gray-100'
             : 'border-gray-200 hover:border-gray-300',
-          isMultiline ? 'flex-col items-stretch gap-0' : 'flex-row items-center gap-3',
+          isMultiline
+            ? 'flex-col items-stretch gap-0'
+            : 'flex-row items-center gap-3',
           className || 'bg-white'
         )}
       >
-        <div className={clsx(
-          'absolute left-3.5 pointer-events-none z-10',
-          isMultiline ? 'hidden' : ''
-        )}>
-          <MagnifyingGlassIcon className='size-4 text-gray-400'/>
+        <div
+          className={clsx(
+            'absolute left-3.5 pointer-events-none z-10',
+            isMultiline ? 'hidden' : ''
+          )}
+        >
+          <MagnifyingGlassIcon className="size-4 text-gray-400" />
         </div>
         <div className="flex-1 relative">
           <PlainTextPlugin
             contentEditable={
               <ContentEditable
                 className={clsx(
-                  "outline-none flex-1 m-0 rounded-md text-base px-4 py-3 text-gray-900",
-                  isMultiline ? "pl-4" : "pl-10 pr-12",
+                  'outline-none flex-1 m-0 rounded-md text-base px-4 py-3 text-gray-900',
+                  isMultiline ? 'pl-4' : 'pl-10 pr-12',
                   inputClassName,
-                  loading && "opacity-50 cursor-not-allowed"
+                  loading && 'opacity-50 cursor-not-allowed'
                 )}
                 aria-placeholder={placeholder}
                 placeholder={
-                  <div className={clsx("absolute top-3 text-base text-gray-400 pointer-events-none select-none",
-                    isMultiline ? "left-4" : "left-10 truncate right-10"
-
-                  )}>
+                  <div
+                    className={clsx(
+                      'absolute top-3 text-base text-gray-400 pointer-events-none select-none',
+                      isMultiline ? 'left-4' : 'left-10 truncate right-10'
+                    )}
+                  >
                     {placeholder}
                   </div>
                 }
@@ -241,9 +281,11 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
             onMultilineChange={handleMultilineChange}
           />
         </div>
-        <div className={clsx(
-          isMultiline ? 'relative flex justify-end p-2' : 'absolute right-2 '
-        )}>
+        <div
+          className={clsx(
+            isMultiline ? 'relative flex justify-end p-2' : 'absolute right-2 '
+          )}
+        >
           <Button
             type="button"
             onClick={handleSubmit}
@@ -276,7 +318,7 @@ export function SearchQuery({initQuery, className, inputClassName, loading, hand
                 />
               </svg>
             ) : (
-              <ArrowRightIcon className='size-4'/>
+              <ArrowRightIcon className="size-4" />
             )}
           </Button>
         </div>
